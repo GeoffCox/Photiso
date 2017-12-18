@@ -1,0 +1,7 @@
+﻿<Window x:Class="Photiso.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Photiso" Height="500" Width="700" MinWidth="700" MinHeight="500" WindowStartupLocation="CenterScreen"
+        Icon="Icon.ico">
+    <Control Style="{StaticResource Main.View}" />
+</Window>
