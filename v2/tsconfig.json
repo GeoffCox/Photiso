@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+      "emitDecoratorMetadata": true,
+      "experimentalDecorators": true,
+      "jsx": "react",
+      "module": "commonjs",
+      "moduleResolution": "node",
+      "noImplicitAny": false,
+      "removeComments": false,
+      "sourceMap": true,
+      "suppressImplicitAnyIndexErrors": true,
+      "target": "es6"
+    },
+    "exclude": [
+      "node_modules"
+    ]
+  }
