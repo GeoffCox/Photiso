@@ -4,15 +4,35 @@ import * as path from "path";
 import * as exif from "fast-exif";
 import * as crypto from "crypto";
 
+
+
+export type OrganizerProps = {
+    unorganizedDir: string;
+    organizedDir: string;
+    duplicatesDir: string;
+    onStartedDir?: (dir: string) => void;
+    onFinishedDir?: (dir: string) => void;
+    onNoOp?: (file: string) => void;
+    onSkipped?: (file: string) => void;
+    onMoved?: (fromFile: string, toFile: string) => void;
+    onDuplicateMoved?: (fromFile: string, toFile) => void;
+    onDuplicateNoOp?: (file: string) => void;
+    onError?: (file: string, error: Error) => void;
+}
+
 export type Organizer = {
     organize(): Promise<void>;
 }
 
-export const createOrganizer = (unorganizedDir: string, organizedDir: string, duplicatesDir: string) => {
+export const createOrganizer = (props: OrganizerProps) => {
 
-    const padStart = (value: number, length: number): string => {
+    const padStart = (value: number, paddedLength: number): string => {
         let text = value.toString();
-        return `${'0'.repeat(length - text.length)}${text}`;
+        if (text.length >= paddedLength) {
+            return text;
+        }
+
+        return `${'0'.repeat(paddedLength - text.length)}${text}`;
     }
 
     const photoExts = ['.JPG', '.JPEG', '.PNG', '.BMP', '.TIF', '.WMP', '.ICO']
@@ -36,7 +56,7 @@ export const createOrganizer = (unorganizedDir: string, organizedDir: string, du
         catch (error) {
             console.warn(error);
         }
-
+        
         const stats = await fs.stat(file);
         const { ctime, mtime } = stats;
         return ctime < mtime ? ctime : mtime;
@@ -63,15 +83,15 @@ export const createOrganizer = (unorganizedDir: string, organizedDir: string, du
 
         const ext = path.parse(sourceFile).ext;
 
-        const takenTime = (await getPhotoTakenTime(sourceFile)).;        
+        const takenTime = (await getPhotoTakenTime(sourceFile));
 
         const year = padStart(takenTime.getFullYear(), 4);
         const month = padStart(takenTime.getMonth(), 2);
-        const dayOfMonth = padStart(takenTime.getDate(), 3);
-        const hours = padStart(takenTime.getHours() + takenTime.getTimezoneOffset(), 4);
-        const minutes = padStart(takenTime.getMinutes(), 2);
+        const dayOfMonth = padStart(takenTime.getDate(), 2);
+        const hours = padStart(takenTime.getHours() + (takenTime.getTimezoneOffset()/60), 2);
+        const minutes = padStart(takenTime.getMinutes()  + (takenTime.getTimezoneOffset()%60), 2);
 
-        const dir = path.join(organizedDir, year, month);
+        const dir = path.join(props.organizedDir, year, month);
         const name = `IMG ${year}-${month}-${dayOfMonth} ${hours}-${minutes}`;
 
         return { dir: dir, name: name, ext: ext };
@@ -88,18 +108,23 @@ export const createOrganizer = (unorganizedDir: string, organizedDir: string, du
                 name = `${name}.${padStart(conflictRevision, 3)}`;
             }
 
-            let destFile = path.format({ dir: organizedDir, name: name, ext: ext });
+            let destFile = path.format({ dir: props.organizedDir, name: name, ext: ext });
 
             // if already in right place, no-op
             if (sourceFile.toUpperCase() === destFile.toUpperCase()) {
-                console.log(`Not moved: ${sourceFile}`);
+
+                if (props.onNoOp !== undefined) {
+                    props.onNoOp(sourceFile);
+                }
                 return;
             }
 
-            // if dest does not exit move
+            // if dest does not exist move
             if (!(await fs.pathExists(destFile))) {
                 await fs.move(sourceFile, destFile);
-                console.log(`Moved: ${sourceFile} to ${destFile}`);
+                if (props.onMoved !== undefined) {
+                    props.onMoved(sourceFile, destFile);
+                }
                 return;
             }
 
@@ -107,14 +132,19 @@ export const createOrganizer = (unorganizedDir: string, organizedDir: string, du
             const sourceHash = await getPhotoContentHash(sourceFile);
             const destHash = await getPhotoContentHash(destFile);
             if (sourceHash === destHash) {
-                destFile = path.format({ dir: duplicatesDir, name: sourceHash, ext: ext });
+                destFile = path.format({ dir: props.duplicatesDir, name: sourceHash, ext: ext });
                 // move to duplicates if it doesn't already exist
                 if (!(await fs.pathExists(destFile))) {
-                    await fs.move(sourceFile, destFile);   
-                    console.log(`Duplicate moved: ${sourceFile} to ${destFile}`);                 
+                    await fs.move(sourceFile, destFile);
+                    if (props.onDuplicateMoved !== undefined) {
+                        props.onDuplicateMoved(sourceFile, destFile);
+                    }
                 } else {
                     await fs.unlink(sourceFile);
-                    console.log(`Duplicate deleted: ${sourceFile}`);                 
+                    if (props.onDuplicateNoOp !== undefined) {
+                        props.onDuplicateNoOp(sourceFile);
+                    }
+
                 }
                 return;
             }
@@ -125,27 +155,48 @@ export const createOrganizer = (unorganizedDir: string, organizedDir: string, du
     }
 
     const organizeDir = async (dir: string): Promise<void> => {
-        console.log(`Found directory: ${dir}`);
+
+        // Never process the duplicates folder
+        if (dir.toUpperCase() === props.duplicatesDir.toUpperCase()) {
+            return;
+        }
+
+        if (props.onStartedDir !== undefined) {
+            props.onStartedDir(dir);
+        }
 
         const paths = await fs.readdir(dir);
-        paths.forEach(async p => {
-            const sourceFile = path.format({ dir: dir, base: p });
-            if (isPhotoFile(p)) {
-                await placePhoto(sourceFile);
-            }
-            else {
-                const stats = await fs.stat(sourceFile);
-                if (stats.isDirectory()) {                    
-                    await organizeDir(sourceFile);
-                } else {
-                    console.log(`Skipped: ${sourceFile}`);
+        await Promise.all(paths.map(async p => {
+            try {
+                const sourceFile = path.format({ dir: dir, base: p });
+                if (isPhotoFile(p)) {
+                    await placePhoto(sourceFile);
+                }
+                else {
+                    const stats = await fs.stat(sourceFile);
+                    if (stats.isDirectory()) {
+                        await organizeDir(sourceFile);
+                    } else {
+                        if (props.onSkipped !== undefined) {
+                            props.onSkipped(sourceFile);
+                        }
+                    }
                 }
             }
-        });
+            catch (e) {
+                if (props.onError !== undefined) {
+                    props.onError(p, e)
+                }
+            }
+        }));
+
+        if (props.onFinishedDir !== undefined) {
+            props.onFinishedDir(dir);
+        }
     }
 
     const organize = async (): Promise<void> => {
-        return organizeDir(unorganizedDir);
+        return organizeDir(props.unorganizedDir);
     };
 
     return {
