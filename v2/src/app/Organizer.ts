@@ -98,7 +98,7 @@ export const createOrganizer = (props: OrganizerProps) => {
     }
 
     const placePhoto = async (sourceFile: string): Promise<void> => {
-        let conflictRevision = 0;
+        let conflictRevision = 1;
 
         while (true) {
             let { dir, name, ext } = await getPhotoDest(sourceFile);
