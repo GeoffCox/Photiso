@@ -35,8 +35,8 @@ export class App extends React.Component<AppProps, {}> {
             onDuplicateMoved: (fromFile: string, toFile): void => {
                 console.log(`Duplicate: ${fromFile} -> ${toFile}`);
             },
-            onDuplicateNoOp: (file: string): void => {
-                console.log(`Duplicate: ${file}`);
+            onDuplicateNoOp: (file: string, hash: string): void => {
+                console.log(`Duplicate: ${file}  Hash: ${hash}`);
             },
             onError: (file: string, error: Error): void => {
                 console.log(`Error: ${file} ${error}`);

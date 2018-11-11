@@ -15,8 +15,8 @@ export type OrganizerProps = {
     onNoOp?: (file: string) => void;
     onSkipped?: (file: string) => void;
     onMoved?: (fromFile: string, toFile: string) => void;
-    onDuplicateMoved?: (fromFile: string, toFile) => void;
-    onDuplicateNoOp?: (file: string) => void;
+    onDuplicateMoved?: (fromFile: string, toFile: string) => void;
+    onDuplicateNoOp?: (file: string, hash: string) => void;
     onError?: (file: string, error: Error) => void;
 }
 
@@ -56,7 +56,7 @@ export const createOrganizer = (props: OrganizerProps) => {
         catch (error) {
             console.warn(error);
         }
-        
+
         const stats = await fs.stat(file);
         const { ctime, mtime } = stats;
         return ctime < mtime ? ctime : mtime;
@@ -86,10 +86,10 @@ export const createOrganizer = (props: OrganizerProps) => {
         const takenTime = (await getPhotoTakenTime(sourceFile));
 
         const year = padStart(takenTime.getFullYear(), 4);
-        const month = padStart(takenTime.getMonth(), 2);
+        const month = padStart(takenTime.getMonth() + 1, 2);
         const dayOfMonth = padStart(takenTime.getDate(), 2);
-        const hours = padStart(takenTime.getHours() + (takenTime.getTimezoneOffset()/60), 2);
-        const minutes = padStart(takenTime.getMinutes()  + (takenTime.getTimezoneOffset()%60), 2);
+        const hours = padStart(takenTime.getHours() + (takenTime.getTimezoneOffset() / 60), 2);
+        const minutes = padStart(takenTime.getMinutes() + (takenTime.getTimezoneOffset() % 60), 2);
 
         const dir = path.join(props.organizedDir, year, month);
         const name = `IMG ${year}-${month}-${dayOfMonth} ${hours}-${minutes}`;
@@ -108,7 +108,7 @@ export const createOrganizer = (props: OrganizerProps) => {
                 name = `${name}.${padStart(conflictRevision, 3)}`;
             }
 
-            let destFile = path.format({ dir: props.organizedDir, name: name, ext: ext });
+            let destFile = path.format({ dir: dir, name: name, ext: ext });
 
             // if already in right place, no-op
             if (sourceFile.toUpperCase() === destFile.toUpperCase()) {
@@ -142,7 +142,7 @@ export const createOrganizer = (props: OrganizerProps) => {
                 } else {
                     await fs.unlink(sourceFile);
                     if (props.onDuplicateNoOp !== undefined) {
-                        props.onDuplicateNoOp(sourceFile);
+                        props.onDuplicateNoOp(sourceFile, sourceHash);
                     }
 
                 }
@@ -165,9 +165,10 @@ export const createOrganizer = (props: OrganizerProps) => {
             props.onStartedDir(dir);
         }
 
-        const paths = await fs.readdir(dir);
-        await Promise.all(paths.map(async p => {
+        const doOrganize = async (p: string) => {
+            console.log(`doOrganize start: ${p}`);
             try {
+
                 const sourceFile = path.format({ dir: dir, base: p });
                 if (isPhotoFile(p)) {
                     await placePhoto(sourceFile);
@@ -188,7 +189,19 @@ export const createOrganizer = (props: OrganizerProps) => {
                     props.onError(p, e)
                 }
             }
-        }));
+            console.log(`doOrganize end: ${p}`);
+        }
+
+        const forEachPromise = (items, fn) => {
+            return items.reduce(function (promise, item) {
+                return promise.then(function () {
+                    return fn(item);
+                });
+            }, Promise.resolve());
+        }
+
+        const paths = await fs.readdir(dir);
+        await forEachPromise(paths, doOrganize);
 
         if (props.onFinishedDir !== undefined) {
             props.onFinishedDir(dir);
