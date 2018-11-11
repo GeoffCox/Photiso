@@ -46,11 +46,17 @@ export const createOrganizer = (props: OrganizerProps) => {
 
         try {
             const exifData = await exif.read(file);
-            const exifModify = exifData.image.ModifyDate;
+
             const exifOriginal = exifData.exif.DateTimeOriginal;
             const exifDigitized = exifData.exif.DateTimeDigitized;
 
             const exifTaken = exifOriginal < exifDigitized ? exifOriginal : exifDigitized;
+
+            if (exif.image === undefined || exif.image === null) {
+                return exifTaken;
+            }
+
+            const exifModify = exifData.image.ModifyDate;
             return exifModify < exifTaken ? exifModify : exifTaken;
         }
         catch (error) {
