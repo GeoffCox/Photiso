@@ -3,7 +3,8 @@ import * as fs from "fs-extra";
 import * as path from "path";
 import * as exif from "fast-exif";
 import * as crypto from "crypto";
-
+import * as _ from "lodash";
+import { isNullOrUndefined } from "util";
 
 
 export type OrganizerProps = {
@@ -44,30 +45,44 @@ export const createOrganizer = (props: OrganizerProps) => {
         return photoExts.some(e => e === ext);
     }
 
-    const getPhotoTakenTime = async (file: string): Promise<Date> => {
+    // given two possible dates, returns the earliest or undefined
+    const earliestDate = (x?: Date, y?: Date): Date | undefined => {
+        const isXDate = _.isDate(x);
+        const isYDate = _.isDate(y);
 
+        if (isXDate && isYDate) {
+            return x < y ? x : y;
+        }
+        else if (isXDate) {
+            return x;
+        }
+        else if (isYDate) {
+            return y;
+        }
+
+        return undefined;
+    }
+
+    // if the file contains exif data, returns the earliest date taken
+    // otherwise returns the earliest created/modified date
+    const getPhotoTakenTime = async (file: string): Promise<Date> => {
         try {
             const exifData = await exif.read(file);
 
-            const exifOriginal = exifData.exif.DateTimeOriginal;
-            const exifDigitized = exifData.exif.DateTimeDigitized;
-
-            const exifTaken = exifOriginal < exifDigitized ? exifOriginal : exifDigitized;
-
-            if (exif.image === undefined || exif.image === null) {
-                return exifTaken;
+            if (!isNullOrUndefined(exifData) && !isNullOrUndefined(exifData.exif)) {
+                    const dateTaken = earliestDate(exifData.exif.DateTimeOriginal, exifData.exif.DateTimeDigitized);
+                    if (!isNullOrUndefined(dateTaken)) {
+                        return dateTaken;
+                    }
             }
-
-            const exifModify = exifData.image.ModifyDate;
-            return exifModify < exifTaken ? exifModify : exifTaken;
         }
         catch (error) {
             console.warn(error);
         }
 
-        const stats = await fs.stat(file);
-        const { ctime, mtime } = stats;
-        return ctime < mtime ? ctime : mtime;
+        const { ctime, mtime } = await fs.stat(file);
+        
+        return earliestDate(ctime, mtime);
     }
 
     const getPhotoContentHash = async (file: string): Promise<string> => {
@@ -179,7 +194,7 @@ export const createOrganizer = (props: OrganizerProps) => {
 
                 const sourceFile = path.format({ dir: dir, base: p });
                 if (isPhotoFile(p)) {
-                    
+
                     if (props.onStartedFile !== undefined) {
                         props.onStartedFile(sourceFile);
                     }
