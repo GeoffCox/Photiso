@@ -2,13 +2,16 @@ import * as React from "react";
 import * as ReactDOM from "react-dom";
 
 import { App } from "./components/App";
+import AppModel from "./models/AppModel";
+
+const model = new AppModel();
 
 const appElement = document.getElementById('app');
 
 const createApp = (AppComponent: typeof App) => 
 {
     return (
-        <AppComponent compiler="TypeScript" framework="React"/>
+        <AppComponent model={model}/>
     )
 };
 

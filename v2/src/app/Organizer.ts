@@ -12,6 +12,8 @@ export type OrganizerProps = {
     duplicatesDir: string;
     onStartedDir?: (dir: string) => void;
     onFinishedDir?: (dir: string) => void;
+    onStartedFile?: (file: string) => void;
+    onFinishedFile?: (file: string) => void;
     onNoOp?: (file: string) => void;
     onSkipped?: (file: string) => void;
     onMoved?: (fromFile: string, toFile: string) => void;
@@ -177,7 +179,14 @@ export const createOrganizer = (props: OrganizerProps) => {
 
                 const sourceFile = path.format({ dir: dir, base: p });
                 if (isPhotoFile(p)) {
+                    
+                    if (props.onStartedFile !== undefined) {
+                        props.onStartedFile(sourceFile);
+                    }
                     await placePhoto(sourceFile);
+                    if (props.onFinishedFile !== undefined) {
+                        props.onFinishedFile(sourceFile);
+                    }
                 }
                 else {
                     const stats = await fs.stat(sourceFile);
