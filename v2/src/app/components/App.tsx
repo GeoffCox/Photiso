@@ -82,9 +82,9 @@ export class App extends React.Component<AppProps, {}> {
 
     handleRun = async () => {
         const props = {
-            unorganizedDir: "D:\\_Geoff\\GitHub\\Photiso\\v2\\test\\unorganized",
-            organizedDir: "D:\\_Geoff\\GitHub\\Photiso\\v2\\test\\organized",
-            duplicatesDir: "D:\\_Geoff\\GitHub\\Photiso\\v2\\test\\duplicates",
+            unorganizedDir: "D:\\_Geoff\\GitHub\\Photiso\\v2\\test\\current\\unorganized",
+            organizedDir: "D:\\_Geoff\\GitHub\\Photiso\\v2\\test\\current\\organized",
+            duplicatesDir: "D:\\_Geoff\\GitHub\\Photiso\\v2\\test\\current\\duplicates",
             onStartedDir: this.onStartedDir,
             onFinishedDir: this.onFinishedDir,
             onStartedFile: this.onStartedFile,
