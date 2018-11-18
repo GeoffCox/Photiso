@@ -148,8 +148,8 @@ export const createOrganizer = (props: OrganizerProps) => {
                 await fs.mkdirp(props.duplicatesDir);
                 await fs.move(sourceFile, destFile);
 
-                if (props.onMoved !== undefined) {
-                    props.onMoved(sourceFile, destFile);
+                if (props.onDuplicateMoved !== undefined) {
+                    props.onDuplicateMoved(sourceFile, destFile);
                 }
 
                 return;
@@ -171,7 +171,7 @@ export const createOrganizer = (props: OrganizerProps) => {
             if (revision > 0) {
                 destName = `${name}^${revision}`;
             }
-            
+
             let destFile = path.format({ dir: dir, name: destName, ext: ext });
 
             // if already in right place, no-op
@@ -188,6 +188,10 @@ export const createOrganizer = (props: OrganizerProps) => {
 
                 await fs.mkdirp(dir);
                 await fs.move(sourceFile, destFile);
+
+                if (props.onMoved !== undefined) {
+                    props.onMoved(sourceFile, destFile);
+                }
                 return;
             }
 
@@ -196,10 +200,6 @@ export const createOrganizer = (props: OrganizerProps) => {
             const destHash = await hashFile(destFile);
             if (sourceHash === destHash) {
                 await moveToDuplicates(sourceFile, sourceHash, name, ext);
-
-                if (props.onDuplicateMoved !== undefined) {
-                    props.onDuplicateMoved(sourceFile, destFile);
-                }
                 return;
             }
 
@@ -215,33 +215,29 @@ export const createOrganizer = (props: OrganizerProps) => {
             return;
         }
 
-        if (props.onStartedDir !== undefined) {
-            props.onStartedDir(dir);
-        }
-
         const doOrganize = async (p: string) => {
             try {
 
                 const sourceFile = path.format({ dir: dir, base: p });
 
-                if (isPhotoFile(p)) {
-
+                const stats = await fs.stat(sourceFile);
+                if (stats.isDirectory()) {
+                    await organizeDir(sourceFile);
+                }
+                else {
                     if (props.onStartedFile !== undefined) {
                         props.onStartedFile(sourceFile);
                     }
-                    await organizeFile(sourceFile);
+
+                    if (isPhotoFile(p)) {
+                        await organizeFile(sourceFile);
+                    }
+                    else if (props.onSkipped !== undefined) {
+                        props.onSkipped(sourceFile);
+                    }
+
                     if (props.onFinishedFile !== undefined) {
                         props.onFinishedFile(sourceFile);
-                    }
-                }
-                else {
-                    const stats = await fs.stat(sourceFile);
-                    if (stats.isDirectory()) {
-                        await organizeDir(sourceFile);
-                    } else {
-                        if (props.onSkipped !== undefined) {
-                            props.onSkipped(sourceFile);
-                        }
                     }
                 }
             }
@@ -250,7 +246,6 @@ export const createOrganizer = (props: OrganizerProps) => {
                     props.onError(p, e)
                 }
             }
-            console.log(`doOrganize end: ${ p } `);
         }
 
         const forEachPromise = (items, fn) => {
@@ -259,6 +254,10 @@ export const createOrganizer = (props: OrganizerProps) => {
                     return fn(item);
                 });
             }, Promise.resolve());
+        }
+
+        if (props.onStartedDir !== undefined) {
+            props.onStartedDir(dir);
         }
 
         const paths = await fs.readdir(dir);

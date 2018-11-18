@@ -125,7 +125,7 @@ module.exports = [
     plugins: [
       new webpack.HotModuleReplacementPlugin(),
       new HtmlWebpackPlugin({
-        title: 'Hello World!',
+        title: 'Photiso',
         inject: false,
         template: require('html-webpack-template'),
         appMountId: 'app',
