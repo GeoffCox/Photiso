@@ -1,5 +1,6 @@
 const path = require("path");
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 var webpack = require('webpack');
 
 // This is the object webpack looks at for configuration.
@@ -124,6 +125,7 @@ module.exports = [
     // Tells the HTML webpack plug-in to use a template and emit dist/index.html
     plugins: [
       new webpack.HotModuleReplacementPlugin(),
+      new CopyWebpackPlugin([{ from: 'src/static/photiso.png', to: 'static/photiso.png', toType:'file' } ]),
       new HtmlWebpackPlugin({
         title: 'Photiso',
         inject: false,

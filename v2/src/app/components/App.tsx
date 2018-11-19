@@ -6,19 +6,26 @@ import AppModel from "../models/AppModel";
 import { action } from "mobx";
 import { style } from "typestyle";
 import electron = require("electron");
-import { stringify } from "querystring";
+import { url } from "csx";
 
 const headerClass = style({
     background: "#333333",
-    height: "50px",
+    height: "75px",
     display: "flex",
     flexDirection: "row",
     alignItems: "center"
 });
 
+const photisoLogo = style({
+    backgroundImage: url("/static/photiso.png"),
+    width: "42px",
+    height: "52px",
+    margin: "10px"
+});
+
 const headerDescriptionClass = style({
     fontFamily: "Segoe UI Light",
-    fontSize: "18pt",
+    fontSize: "14pt",
     color: "#A6A6A6",
     margin: "10px"
 });
@@ -143,6 +150,7 @@ export class App extends React.Component<AppProps, AppState> {
 
         return <div>
             <div className={headerClass}>
+                <div className={photisoLogo}></div>
                 <div className={headerDescriptionClass}>Photiso organizes your photos by date taken into year/month folders</div>
             </div>
             <div>
