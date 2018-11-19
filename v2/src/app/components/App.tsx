@@ -63,11 +63,12 @@ const actionSectionClass = style({
     margin: "10px"
 });
 
-const startButtonClass = style({
+const actionButtonClass = style({   
     padding: "5px 10px",
     minWidth: "200px",
     fontFamily: "Segoe UI Light",
     fontSize: "18pt",
+    marginLeft: "10px"
 });
 
 const statSectionClass = style({
@@ -132,7 +133,13 @@ const statLabelClass = style(labelMixin, {
 
 export interface AppProps { model: AppModel; }
 
-interface AppState { unorganizedDir: string; }
+enum OrganizingStatus {
+    Waiting,
+    Running,
+    Paused,    
+}
+
+interface AppState { status: OrganizingStatus, shouldContinue: boolean }
 
 @observer
 export class App extends React.Component<AppProps, AppState> {
@@ -141,12 +148,33 @@ export class App extends React.Component<AppProps, AppState> {
     constructor(props: AppProps) {
         super(props);
         this.state = {
-            unorganizedDir: ''
+            status: OrganizingStatus.Waiting,
+            shouldContinue: true
         };
     }
 
     render() {
         const { model } = this.props;
+
+        const renderActionSection = () => {
+            switch (this.state.status) {
+                case OrganizingStatus.Waiting:
+                    return (<div className={actionSectionClass}>                
+                        <button className={actionButtonClass} onClick={this.handleStart}>Start</button>
+                        <button className={actionButtonClass} onClick={this.handlePause} disabled>Pause</button>
+                    </div>);
+                    case OrganizingStatus.Running:
+                    return (<div className={actionSectionClass}>                
+                        <button className={actionButtonClass} onClick={this.handleStop}>Stop</button>
+                        <button className={actionButtonClass} onClick={this.handlePause}>Pause</button>
+                    </div>);
+                    case OrganizingStatus.Paused:
+                    return (<div className={actionSectionClass}>                
+                        <button className={actionButtonClass} onClick={this.handleStop}>Stop</button>
+                        <button className={actionButtonClass} onClick={this.handleStart}>Resume</button>
+                    </div>);
+            }
+        }
 
         return <div>
             <div className={headerClass}>
@@ -170,9 +198,7 @@ export class App extends React.Component<AppProps, AppState> {
                     <button className={browseDirButtonClass} onClick={this.browseDuplicatesDir}>...</button>
                 </div>
             </div>
-            <div className={actionSectionClass}>
-                <button className={startButtonClass} onClick={this.handleStart}>Start</button>
-            </div>
+            {renderActionSection()}
             <div className={statSectionClass}>
                 <div className={statClass}>
                     <div className={foundCountClass}>{model.fileCount}</div>
@@ -235,6 +261,10 @@ export class App extends React.Component<AppProps, AppState> {
         }
 
         return undefined;
+    };
+
+    private onShouldContinue = (): boolean => {
+        return this.state.shouldContinue;
     };
 
     @action
@@ -324,6 +354,7 @@ export class App extends React.Component<AppProps, AppState> {
             unorganizedDir: unorganizedDir,
             organizedDir: organizedDir,
             duplicatesDir: duplicatesDir,
+            onShouldContinue: this.onShouldContinue,
             onStartedDir: this.onStartedDir,
             onFinishedDir: this.onFinishedDir,
             onStartedFile: this.onStartedFile,
@@ -335,8 +366,20 @@ export class App extends React.Component<AppProps, AppState> {
             onError: this.onError
         };
 
-        this.clearCounts();
+        if (this.state.status === OrganizingStatus.Waiting) {
+            this.clearCounts();
+        }
+        
+        this.setState({ status: OrganizingStatus.Running, shouldContinue: true });
         const organizer = createOrganizer(organizerProps);
         await organizer.organize();
+    }
+
+    handlePause = () => {
+        this.setState({ status: OrganizingStatus.Paused, shouldContinue: false });
+    }
+
+    handleStop = () => {
+        this.setState({ status: OrganizingStatus.Waiting, shouldContinue: false });
     }
 }

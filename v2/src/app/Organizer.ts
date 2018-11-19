@@ -12,6 +12,7 @@ export type OrganizerProps = {
     readonly unorganizedDir: string;
     readonly organizedDir: string;
     readonly duplicatesDir: string;
+    readonly onShouldContinue?: () => boolean;
     readonly onStartedDir?: (dir: string) => void;
     readonly onFinishedDir?: (dir: string) => void;
     readonly onStartedFile?: (file: string) => void;
@@ -125,6 +126,12 @@ export const createOrganizer = (props: OrganizerProps) => {
         let revision = 1;
         while (true) {
 
+            if (props.onShouldContinue) {
+                if (!props.onShouldContinue()) {
+                    return;
+                }
+            }
+            
             let destName = name;
 
             if (revision > 0) {
@@ -165,6 +172,12 @@ export const createOrganizer = (props: OrganizerProps) => {
 
         let revision = 0;
         while (true) {
+
+            if (props.onShouldContinue) {
+                if (!props.onShouldContinue()) {
+                    return;
+                }
+            }
 
             let destName = name;
 
@@ -217,6 +230,12 @@ export const createOrganizer = (props: OrganizerProps) => {
 
         const doOrganize = async (p: string) => {
             try {
+
+                if (props.onShouldContinue) {
+                    if (!props.onShouldContinue()) {
+                        return;
+                    }
+                }
 
                 const sourceFile = path.format({ dir: dir, base: p });
 
