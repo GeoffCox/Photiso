@@ -1,12 +1,72 @@
 
 import { observer } from "mobx-react";
 import * as React from "react";
-import { createOrganizer } from "../Organizer";
+import { createOrganizer } from "../organizer";
 import AppModel from "../models/AppModel";
 import { action } from "mobx";
 import { style } from "typestyle";
 import electron = require("electron");
 import { url } from "csx";
+import { Stats} from "./stats"
+
+/*
+
+Page 1:
+
+Photiso organizes photos and images.
+
+Q: How does Photiso organize photos?
+Each file is examined for photo information to get the date taken.
+Each photo file is placed into a <year>/<month> folder structure.  
+Example: All the photos taken in April of 2008 would be put into the 2008/04 folder.
+
+Q: How does Photiso name photo files?
+A: Each photo is named with the all the date taken information: '<year>-<month>-<day> <hour>.<minute>.<second>.<millisecond>.<extension>'. 
+Example: A photo (.jpg) taken on October 14th, 2006 at exactly 10:02 PM, Photiso would name the photo to 2006-10-14 22.02.00.000.jpg.
+
+Q: Does Photiso ever delete a photo?
+No! Photos are either moved to a year/month folder, moved to a duplicates folder, or left where they are.
+
+Q: Why does Photiso organize photos this way?
+A: 
+
+Q: How does Photiso determine if a file is a photo?
+A: Photiso looks at all files with any of the following extensions: .JPG, .JPEG, .PNG, .BMP, .TIF, .WMP, and .ICO
+
+Q: What does Photiso do with files that are not images.
+A: Photiso will skip those files and not move them.
+
+Q: What is an file isn't a photo or doesn't have date taken information?
+A: Photiso will use the earliest of the created date or modified date of the image.
+
+Q: What if I have multiple edited versions of my photos with the same date taken?
+A: Photiso will detect multiple photos with the same date taken.  
+If it is not an exact duplicate, then it appends a revision to the file name.
+Example: If there were an edited copy of the same photo, the name would be 2006/10/2006-10-14 22.02.00.000^001.jpg 
+
+Q: What happens if two photos are exact duplicates of each other?
+A: Photiso will move the duplicates into the duplicates folder.  
+Each set of duplicates is put into a folder named by the signature of its unique content.
+Example: A duplicate of a photo is found, and the photo is moved into duplicates/63ae9a44204af9995848cd6211d413f8e32de98214818c354e4128be0b4ef7d4.
+
+Q: How does Photiso name duplicate photo files.
+Photos within the duplicates folder will have the same naming as photos in a <year>/<month> folder.
+
+Page 2: Pick photos to organize.
+
+Choose the folder containing the photos you want to organize.  
+If you are organizing photos from a device, we recommend copying them to a folder on your computer first.
+
+Page 3:
+
+Page 4:
+
+Page 5:
+
+Page 6:
+
+
+*/
 
 const headerClass = style({
     background: "#333333",
@@ -70,66 +130,6 @@ const actionButtonClass = style({
     fontSize: "18pt",
     marginLeft: "10px"
 });
-
-const statSectionClass = style({
-    borderTop: "1px solid #CCCCCC",
-    flexGrow: 0,
-    flexShrink: 0,
-    display: "flex",
-    flexDirection: "row",
-    alignItems: "stretch",
-    justifyContent: "stretch",
-    padding: "5px"
-});
-
-const statClass = style({
-    display: "flex",
-    flexDirection: "column",
-    alignContent: "flex-start",
-    margin: "5px",
-    padding: "0 5px 10px 0px",
-    width: "100%",
-    textAlign: "center",
-    fontFamily: "Segoe UI Light",
-    $nest: {
-        "&:first-child": {
-            borderRight: "1px solid #CCCCCC"
-        }
-    }
-});
-
-const countMixin = {
-    flexBasis: "100%",
-    flexGrow: 1,
-    fontSize: "34pt"
-}
-
-const foundCountClass = style(countMixin, {
-});
-
-const organizedCountClass = style(countMixin, {
-    color: "#5D895C" //FF5D895C
-});
-
-const duplicatesCountClass = style(countMixin, {
-    color: "#A19045" //FFA19045
-});
-
-const skippedCountClass = style(countMixin, {
-    color: "#5C7589" //FF5C7589
-});
-
-const errorCountClass = style(countMixin, {
-    color: "#8A5C5C" //FF8A5C5C
-});
-
-const statLabelClass = style(labelMixin, {
-    flexGrow: 0
-});
-
-
-
-
 
 export interface AppProps { model: AppModel; }
 
@@ -199,27 +199,7 @@ export class App extends React.Component<AppProps, AppState> {
                 </div>
             </div>
             {renderActionSection()}
-            <div className={statSectionClass}>
-                <div className={statClass}>
-                    <div className={foundCountClass}>{model.fileCount}</div>
-                    <div className={statLabelClass}>found</div>
-                </div>
-                <div className={statClass}>
-                    <div className={organizedCountClass}>{model.organizedCount}</div>
-                    <div className={statLabelClass}>organized</div>
-                </div>
-                <div className={statClass}>
-                    <div className={duplicatesCountClass}>{model.duplicatesCount}</div>
-                    <div className={statLabelClass}>duplicates</div></div>
-                <div className={statClass}>
-                    <div className={skippedCountClass}>{model.skippedCount}</div>
-                    <div className={statLabelClass}>skipped</div>
-                </div>
-                <div className={statClass}>
-                    <div className={errorCountClass}>{model.errorCount}</div>
-                    <div className={statLabelClass}>errors</div>
-                </div>
-            </div>
+            <Stats model={model} />
         </div>;
     }
 
@@ -373,6 +353,7 @@ export class App extends React.Component<AppProps, AppState> {
         this.setState({ status: OrganizingStatus.Running, shouldContinue: true });
         const organizer = createOrganizer(organizerProps);
         await organizer.organize();
+        this.setState({ status: OrganizingStatus.Waiting });
     }
 
     handlePause = () => {

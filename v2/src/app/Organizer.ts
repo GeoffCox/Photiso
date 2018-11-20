@@ -131,11 +131,11 @@ export const createOrganizer = (props: OrganizerProps) => {
                     return;
                 }
             }
-            
+
             let destName = name;
 
             if (revision > 0) {
-                destName = `${name}^${revision}`;
+                destName = `${name}^${padStart(revision,3)}`;
             }
 
             let destFile = path.format({ dir: destDir, name: destName, ext: ext });
@@ -182,7 +182,7 @@ export const createOrganizer = (props: OrganizerProps) => {
             let destName = name;
 
             if (revision > 0) {
-                destName = `${name}^${revision}`;
+                destName = `${name}^${padStart(revision,3)}`;
             }
 
             let destFile = path.format({ dir: dir, name: destName, ext: ext });
