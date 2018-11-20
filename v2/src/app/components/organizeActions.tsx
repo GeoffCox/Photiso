@@ -44,17 +44,10 @@ export class OrganizerActions extends React.Component<OrganizerActionsProps, Org
             case OrganizerStatus.Waiting:
                 return (<div className={actionSectionClass}>
                     <button className={actionButtonClass} onClick={this.handleStart}>Start</button>
-                    <button className={actionButtonClass} onClick={this.handlePause} disabled>Pause</button>
                 </div>);
             case OrganizerStatus.Running:
                 return (<div className={actionSectionClass}>
                     <button className={actionButtonClass} onClick={this.handleStop}>Stop</button>
-                    <button className={actionButtonClass} onClick={this.handlePause}>Pause</button>
-                </div>);
-            case OrganizerStatus.Paused:
-                return (<div className={actionSectionClass}>
-                    <button className={actionButtonClass} onClick={this.handleStop}>Stop</button>
-                    <button className={actionButtonClass} onClick={this.handleStart}>Resume</button>
                 </div>);
         }
     }
@@ -161,12 +154,6 @@ export class OrganizerActions extends React.Component<OrganizerActionsProps, Org
         if (model.status === OrganizerStatus.Running) {
             model.status = OrganizerStatus.Waiting;
         }
-    }
-
-    @action
-    handlePause = () => {
-        this.setState({ shouldContinue: false });
-        this.props.model.status = OrganizerStatus.Paused;
     }
 
     @action

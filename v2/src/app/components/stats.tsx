@@ -68,12 +68,6 @@ const statLabelClass = style({
 
 export interface StatsProps { model: AppModel; }
 
-enum OrganizingStatus {
-    Waiting,
-    Running,
-    Paused,    
-}
-
 @observer
 export class Stats extends React.Component<StatsProps, {}> {
 

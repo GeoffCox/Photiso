@@ -8,8 +8,7 @@ const initialSlides = [
 
 export enum OrganizerStatus {
   Waiting,
-  Running,
-  Paused,
+  Running
 };
 
 export default class AppModel {
