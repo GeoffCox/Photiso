@@ -87,10 +87,21 @@ export const createOrganizer = (props: OrganizerProps) => {
         try {
             const exifData = await exif.read(file);
 
+            let exifOriginalDate : Date = undefined;
+            let exifDigitizedDate : Date = undefined;
+
+            // moment(undefined) returns today's date, so I have to be careful to check exif for undefined.
             if (!isNullOrUndefined(exifData) && !isNullOrUndefined(exifData.exif)) {
-                const exifOriginalDate = moment(exifData.exif.DateTimeOriginal)
-                const exifDigitizedDate = moment(exifData.exif.DateTimeOriginal)
-                const dateTaken = earliestDate(exifOriginalDate.toDate(), exifDigitizedDate.toDate());
+
+                if (!isNullOrUndefined(exifData.exif.DateTimeOriginal)) {
+                    exifOriginalDate = moment(exifData.exif.DateTimeOriginal).toDate();
+                }
+
+                if (!isNullOrUndefined(exifData.exif.DateTimeDigitized)) {
+                    exifDigitizedDate = moment(exifData.exif.DateTimeDigitized).toDate();
+                }
+                                
+                const dateTaken = earliestDate(exifOriginalDate, exifDigitizedDate);
                 if (!isNullOrUndefined(dateTaken)) {
                     return dateTaken;
                 }
@@ -101,7 +112,7 @@ export const createOrganizer = (props: OrganizerProps) => {
         }
 
         const stats = await fs.stat(file);
-        const ctime = moment(stats.mtimeMs);
+        const ctime = moment(stats.ctimeMs);
         const mtime = moment(stats.mtimeMs);
 
         return earliestDate(ctime.toDate(), mtime.toDate());
@@ -109,7 +120,7 @@ export const createOrganizer = (props: OrganizerProps) => {
 
     // <organizedDir>/yyyy/MM/IMG yyyy-MM-DD hh.mm    
     const getPhotoDest = async (sourceFile: string): Promise<{ dir: string; name: string; ext: string; }> => {
-        const takenTime = moment((await getPhotoDate(sourceFile))).utc();
+        const takenTime = moment((await getPhotoDate(sourceFile)));
 
         const dir = path.join(props.organizedDir, takenTime.format('YYYY'), takenTime.format('MM'));
         const name = takenTime.toISOString().replace(/\:/g, '.').replace('T', ' ').replace('Z', '');
