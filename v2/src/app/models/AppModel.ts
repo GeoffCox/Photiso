@@ -6,9 +6,16 @@ const initialSlides = [
 
 ];
 
-
+export enum OrganizerStatus {
+  Waiting,
+  Running,
+  Paused,
+};
 
 export default class AppModel {
+
+  @observable
+  public status: OrganizerStatus = OrganizerStatus.Waiting;
 
   @observable
   public unorganizedDir: string = "D:\\_Geoff\\GitHub\\Photiso\\v2\\test\\current\\unorganized";
@@ -33,5 +40,4 @@ export default class AppModel {
 
   @observable
   public errorCount: number = 0;
-
 }

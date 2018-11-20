@@ -7,7 +7,6 @@ import * as _ from "lodash";
 import { isNullOrUndefined } from "util";
 import moment = require("moment");
 
-
 export type OrganizerProps = {
     readonly unorganizedDir: string;
     readonly organizedDir: string;
