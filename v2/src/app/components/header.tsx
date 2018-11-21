@@ -12,7 +12,7 @@ const headerClass = style({
 });
 
 const photisoLogo = style({
-    backgroundImage: url("/static/photiso.png"),
+    backgroundImage: url("file:///static/photiso.png"),
     width: "42px",
     height: "52px",
     margin: "10px"

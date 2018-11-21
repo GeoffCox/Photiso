@@ -8,8 +8,16 @@
   "build": {
     "appId": "geoffcox.photiso",
     "directories": {
-      "buildResources": ["static/photiso.png"],
       "output": "electron"
+    },
+    "win": {
+      "extraFiles": ["static/photiso.png"]
+    },
+    "mac": {
+      "extraFiles": ["static/photiso.png"]
+    },
+    "linux": {
+      "extraFiles": ["static/photiso.png"]
     }
   }
 }
