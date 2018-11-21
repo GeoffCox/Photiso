@@ -75,7 +75,7 @@ module.exports = [
     // I inject the hot-middleware before the index.tsx
     entry: {
       app: [
-        "webpack-hot-middleware/client", 
+        "webpack-hot-middleware/client",
         "./src/app/index.tsx"
       ]
     },
@@ -95,16 +95,17 @@ module.exports = [
     module: {
       rules: [
         // All files with a '.ts' or '.tsx' extension will be handled by 'awesome-typescript-loader'.
-        { 
-          test: /\.tsx?$/, 
+        {
+          test: /\.tsx?$/,
           loaders: ["awesome-typescript-loader"]
         },
 
         // All output '.js' files will have any sourcemaps re-processed by 'source-map-loader'.
-        { 
-          enforce: "pre", 
-          test: /\.js$/, 
-          loader: "source-map-loader" }
+        {
+          enforce: "pre",
+          test: /\.js$/,
+          loader: "source-map-loader"
+        }
       ]
     },
 
@@ -125,7 +126,9 @@ module.exports = [
     // Tells the HTML webpack plug-in to use a template and emit dist/index.html
     plugins: [
       new webpack.HotModuleReplacementPlugin(),
-      new CopyWebpackPlugin([{ from: 'src/static/photiso.png', to: 'static/photiso.png', toType:'file' } ]),
+      new CopyWebpackPlugin([
+        { from: 'src/static/photiso.png', to: 'static/photiso.png', toType: 'file' }, 
+        { from: 'electron_package.json', to: 'package.json', toType: 'file' }]),
       new HtmlWebpackPlugin({
         title: 'Photiso',
         inject: false,
@@ -134,8 +137,8 @@ module.exports = [
         scripts: [
           'https://unpkg.com/react@16.3.2/umd/react.development.js',
           'https://unpkg.com/react-dom@16.3.2/umd/react-dom.development.js'
-        ],        
-      })      
+        ],
+      })
     ],
 
     // Tells webpack what file extesions it should look at.

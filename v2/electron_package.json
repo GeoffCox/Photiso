@@ -1,0 +1,15 @@
+{
+  "name": "photiso",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main_bundle.js",
+  "author": "Geoff Cox",
+  "license": "ISC",
+  "build": {
+    "appId": "geoffcox.photiso",
+    "directories": {
+      "buildResources": ["static/photiso.png"],
+      "output": "electron"
+    }
+  }
+}
