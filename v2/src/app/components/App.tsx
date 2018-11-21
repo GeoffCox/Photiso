@@ -2,12 +2,12 @@
 import { observer } from "mobx-react";
 import * as React from "react";
 import AppModel from "../models/AppModel";
-import { Stats } from "./stats"
-import { OrganizerActions } from "./organizeActions";
-import { OrganizedDirInput } from "./organizedDirInput";
-import { UnorganizedDirInput } from "./unorganizedDirInput";
-import { DuplicatesDirInput } from "./duplicatesDirInput";
-import { Header } from "./header";
+import { Stats } from "./Stats"
+import { OrganizerActions } from "./OrganizeActions";
+import { OrganizedDirInput } from "./OrganizedDirInput";
+import { UnorganizedDirInput } from "./UnorganizedDirInput";
+import { DuplicatesDirInput } from "./DuplicatesDirInput";
+import { Header } from "./Header";
 
 /*
 
