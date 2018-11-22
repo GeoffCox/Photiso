@@ -6,7 +6,8 @@
   "scripts": {
     "build:dev": "webpack --config webpack.config.js --mode development",
     "build:prod": "webpack --config webpack.config.js --mode production",
-    "start": "electron dist/main_bundle.js",
+    "start:server": "node server.js",
+    "start:app": "electron dist/main_bundle.js",
     "pack": "electron-builder --dir --project dist",
     "dist": "electron-builder  --project dist",
     "full": "webpack --config webpack.config.js --mode production & electron-builder  --project dist"
