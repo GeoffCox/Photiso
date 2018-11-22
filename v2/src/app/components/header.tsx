@@ -11,8 +11,13 @@ const headerClass = style({
     alignItems: "center"
 });
 
+let logoLocation = "file:///static/photiso.png";
+if (process.env.NODE_ENV === 'development') {
+    logoLocation = "static/photiso.png";
+}
+
 const photisoLogo = style({
-    backgroundImage: url("file:///static/photiso.png"),
+    backgroundImage: url(logoLocation),
     width: "42px",
     height: "52px",
     margin: "10px"
