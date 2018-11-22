@@ -11,7 +11,7 @@ const actionSectionClass = style({
     display: "flex",
     flexDirection: "row",
     justifyContent: "flex-end",
-    margin: "10px"
+    margin: "20px 10px"
 });
 
 const actionButtonClass = style({
