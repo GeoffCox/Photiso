@@ -123,7 +123,7 @@ export const createOrganizer = (props: OrganizerProps) => {
         const takenTime = moment((await getPhotoDate(sourceFile)));
 
         const dir = path.join(props.organizedDir, takenTime.format('YYYY'), takenTime.format('MM'));
-        const name = takenTime.toISOString().replace(/\:/g, '.').replace('T', ' ').replace('Z', '');
+        const name = takenTime.format('YYYY-MM-DD HH.mm.ss.SSS');
         const ext = path.parse(sourceFile).ext;
 
         return { dir: dir, name: name, ext: ext };
