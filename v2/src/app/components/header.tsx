@@ -35,7 +35,7 @@ export class Header extends React.Component<{}, {}> {
     render() {
         return <div className={headerClass}>
                 <div className={photisoLogo}></div>
-                <div className={headerDescriptionClass}>Photiso organizes your photos by date taken into year/month folders</div>
+                <div className={headerDescriptionClass}>Photiso organizes your photos by date taken</div>
             </div>;
     }
 }
