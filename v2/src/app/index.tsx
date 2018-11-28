@@ -3,6 +3,7 @@ import * as ReactDOM from "react-dom";
 
 import { App } from "./components/App";
 import AppModel from "./models/AppModel";
+import { loadLastRunInfo } from "./lastRun";
 
 const model = new AppModel();
 

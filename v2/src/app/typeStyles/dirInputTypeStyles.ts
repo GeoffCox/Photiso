@@ -2,8 +2,8 @@ import { style } from "typestyle";
 
 export const dirLabelClass = style({
     fontFamily: "Segoe UI Light",
-    fontSize: "18pt",
-    margin: "10px 0"
+    fontSize: "16pt",
+    margin: "5px 0 5px 0"
 });
 
 export const dirInputSection = style({

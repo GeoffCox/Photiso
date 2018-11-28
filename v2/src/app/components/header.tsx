@@ -5,10 +5,11 @@ import { url } from "csx";
 
 const headerClass = style({
     background: "#333333",
-    height: "75px",
+    height: "70px",
     display: "flex",
     flexDirection: "row",
-    alignItems: "center"
+    alignItems: "center",
+    margin: "0 0 15px 0"
 });
 
 let logoLocation = "file:///static/photiso.png";

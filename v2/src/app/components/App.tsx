@@ -8,6 +8,8 @@ import { OrganizedDirInput } from "./OrganizedDirInput";
 import { UnorganizedDirInput } from "./UnorganizedDirInput";
 import { DuplicatesDirInput } from "./DuplicatesDirInput";
 import { Header } from "./Header";
+import { loadLastRunInfo, saveLastRunInfo } from "../lastRun";
+import { ipcRenderer } from "electron";
 
 /*
 
@@ -72,6 +74,56 @@ export interface AppProps { model: AppModel; }
 
 @observer
 export class App extends React.Component<AppProps, {}> {
+
+    constructor(props: AppProps) {
+        super(props);
+
+        const { model } = props;
+
+        loadLastRunInfo().then(info => {
+            if (info !== undefined) {
+                model.unorganizedDir = info.unorganizedDir;
+                model.organizedDir = info.organizedDir;
+                model.duplicatesDir = info.duplicatesDir;
+            }
+        });
+    }
+
+    componentDidMount() {
+        window.addEventListener("beforeunload", this.onBeforeUnload);
+    }
+
+    componentWillUnmount() {
+        window.removeEventListener("beforeunload", this.onBeforeUnload);
+    }
+
+    private canClose = false;
+    private onBeforeUnload = (e: any) => {
+        if (!this.canClose) {
+            setTimeout(() => {
+                try {
+                    const { model } = this.props;
+                    saveLastRunInfo({
+                        unorganizedDir: model.unorganizedDir,
+                        organizedDir: model.organizedDir,
+                        duplicatesDir: model.duplicatesDir
+                    }).then(() => {
+                        this.canClose = true;
+                        window.close();
+                    });
+                }
+                catch (error) {
+                    console.log(error);
+                    this.canClose = true;
+                    window.close();
+                }
+            }, 500);
+
+            e.preventDefault();
+            e.returnValue = '';
+            return "Closing. Please wait.";
+        }
+    };
 
     render() {
         const { model } = this.props;

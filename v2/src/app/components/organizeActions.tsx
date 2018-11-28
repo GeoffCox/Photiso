@@ -5,7 +5,6 @@ import { createOrganizer } from "../organizer";
 import AppModel, { OrganizerStatus } from "../models/AppModel";
 import { action } from "mobx";
 import { style } from "typestyle";
-import electron = require("electron");
 
 const actionSectionClass = style({
     display: "flex",
