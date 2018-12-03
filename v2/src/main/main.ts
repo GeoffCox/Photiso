@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, app } from "electron";
+import { BrowserWindow, ipcMain, app, globalShortcut } from "electron";
 import * as path from "path";
 import * as url from "url";
 import { isNullOrUndefined } from "util";
@@ -13,8 +13,23 @@ export default class Main {
     }
   }
 
+  private static appRenderer = undefined;
+
+  private static onRegisterAppRenderer = (e: any) =>
+  {
+    Main.appRenderer = e.sender;
+  }
+
   private static onClose(e: Event) {
-    Main.mainWindow = null;  
+    console.log('main onClose');
+    if (Main.appRenderer !== undefined) {
+      Main.appRenderer.send('main-close-window');
+    }
+  }
+
+  private static onClosed(e: Event) {
+    console.log('main onClosed');
+    Main.mainWindow = null;
   }
 
   private static onReady() {
@@ -25,13 +40,16 @@ export default class Main {
       pathname: path.join(__dirname, "index.html"),
       slashes: true
     });
-    
+
     if (process.env.NODE_ENV === 'development') {
       mainUrl = "http://localhost:1616";
     }
 
     Main.mainWindow.loadURL(mainUrl);
-    Main.mainWindow.on("closed", Main.onClose);
+
+    ipcMain.on('register-app-renderer', Main.onRegisterAppRenderer);
+    Main.mainWindow.on("close", Main.onClose);
+    Main.mainWindow.on("closed", Main.onClosed);
   }
 
   static main() {

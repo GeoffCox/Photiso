@@ -75,11 +75,21 @@ export interface AppProps { model: AppModel; }
 @observer
 export class App extends React.Component<AppProps, {}> {
 
+    private windowClosing = false;
+
     constructor(props: AppProps) {
         super(props);
 
-        const { model } = props;
+        // register with ipcMain so it can let us know 
+        // when the window close button is clicked vs. a dev force reload.
+        ipcRenderer.send('register-app-renderer');
 
+        ipcRenderer.on('main-close-window', (event, arg) => {
+            console.log('main-close-window');
+            this.windowClosing = true;
+        });
+
+        const { model } = props;
         loadLastRunInfo().then(info => {
             if (info !== undefined) {
                 model.unorganizedDir = info.unorganizedDir;
@@ -97,34 +107,6 @@ export class App extends React.Component<AppProps, {}> {
         window.removeEventListener("beforeunload", this.onBeforeUnload);
     }
 
-    private canClose = false;
-    private onBeforeUnload = (e: any) => {
-        if (!this.canClose) {
-            setTimeout(() => {
-                try {
-                    const { model } = this.props;
-                    saveLastRunInfo({
-                        unorganizedDir: model.unorganizedDir,
-                        organizedDir: model.organizedDir,
-                        duplicatesDir: model.duplicatesDir
-                    }).then(() => {
-                        this.canClose = true;
-                        window.close();
-                    });
-                }
-                catch (error) {
-                    console.log(error);
-                    this.canClose = true;
-                    window.close();
-                }
-            }, 500);
-
-            e.preventDefault();
-            e.returnValue = '';
-            return "Closing. Please wait.";
-        }
-    };
-
     render() {
         const { model } = this.props;
 
@@ -137,4 +119,41 @@ export class App extends React.Component<AppProps, {}> {
             <Stats model={model} />
         </div>;
     }
+
+    private readyToClose = false;
+
+    private onBeforeUnload = (e: any) => {
+
+        // if the window is closing then we want to ensure we saved the last run information
+        if (this.windowClosing) {
+            if (!this.readyToClose) {
+                setTimeout(() => {
+                    try {
+                        const { model } = this.props;
+                        saveLastRunInfo({
+                            unorganizedDir: model.unorganizedDir,
+                            organizedDir: model.organizedDir,
+                            duplicatesDir: model.duplicatesDir
+                        }).then(() => {
+                            this.readyToClose = true;
+                            window.close();
+                        });
+                    }
+                    catch (error) {
+                        console.log(error);
+                        this.readyToClose = true;
+                        window.close();
+                    }
+                }, 500);
+            }
+
+            e.preventDefault();
+            e.returnValue = '';
+            return "Please wait...";
+    
+        }
+
+    };
+
+    
 }
