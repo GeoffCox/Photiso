@@ -6,6 +6,7 @@ import * as crypto from "crypto";
 import * as _ from "lodash";
 import { isNullOrUndefined } from "util";
 import moment = require("moment");
+import * as globby from "globby";
 
 export type OrganizerProps = {
     readonly unorganizedDir: string;
@@ -87,8 +88,8 @@ export const createOrganizer = (props: OrganizerProps) => {
         try {
             const exifData = await exif.read(file);
 
-            let exifOriginalDate : Date = undefined;
-            let exifDigitizedDate : Date = undefined;
+            let exifOriginalDate: Date = undefined;
+            let exifDigitizedDate: Date = undefined;
 
             // moment(undefined) returns today's date, so I have to be careful to check exif for undefined.
             if (!isNullOrUndefined(exifData) && !isNullOrUndefined(exifData.exif)) {
@@ -100,7 +101,7 @@ export const createOrganizer = (props: OrganizerProps) => {
                 if (!isNullOrUndefined(exifData.exif.DateTimeDigitized)) {
                     exifDigitizedDate = moment(exifData.exif.DateTimeDigitized).toDate();
                 }
-                                
+
                 const dateTaken = earliestDate(exifOriginalDate, exifDigitizedDate);
                 if (!isNullOrUndefined(dateTaken)) {
                     return dateTaken;
@@ -145,12 +146,12 @@ export const createOrganizer = (props: OrganizerProps) => {
             let destName = name;
 
             if (revision > 0) {
-                destName = `${name}^${padStart(revision,3)}`;
+                destName = `${name}^${padStart(revision, 3)}`;
             }
 
             let destFile = path.format({ dir: destDir, name: destName, ext: ext });
 
-            // if already in right place, no-op
+            // if already in right place, I no-op
             if (sourceFile.toUpperCase() === destFile.toUpperCase()) {
 
                 if (props.onNoOp !== undefined) {
@@ -159,7 +160,7 @@ export const createOrganizer = (props: OrganizerProps) => {
                 return;
             }
 
-            // move if it doesn't already exist
+            // I move if it doesn't already exist
             if (!(await fs.pathExists(destFile))) {
 
                 await fs.mkdirp(props.duplicatesDir);
@@ -192,22 +193,24 @@ export const createOrganizer = (props: OrganizerProps) => {
             let destName = name;
 
             if (revision > 0) {
-                destName = `${name}^${padStart(revision,3)}`;
+                destName = `${name}^${padStart(revision, 3)}`;
             }
 
             let destFile = path.format({ dir: dir, name: destName, ext: ext });
 
-            // if already in right place, no-op
+            // if already in right place, I no-op
             if (sourceFile.toUpperCase() === destFile.toUpperCase()) {
 
                 if (props.onNoOp !== undefined) {
                     props.onNoOp(sourceFile);
                 }
                 return;
-            }
-
-            // if dest does not exist move
-            if (!(await fs.pathExists(destFile))) {
+            }            
+            
+            // if there are no files with the same name (not considering extension)
+            // I move the file
+            const existingFiles = await globby(`${dir}/${destName}.*`);
+            if (existingFiles.length == 0) {
 
                 await fs.mkdirp(dir);
                 await fs.move(sourceFile, destFile);
@@ -218,12 +221,15 @@ export const createOrganizer = (props: OrganizerProps) => {
                 return;
             }
 
-            // if file is a duplicate
-            const sourceHash = await hashFile(sourceFile);
-            const destHash = await hashFile(destFile);
-            if (sourceHash === destHash) {
-                await moveToDuplicates(sourceFile, sourceHash, name, ext);
-                return;
+            // if file is a duplicate of an existing file (same extension)
+            // I move it to duplicates
+            if ((await fs.pathExists(destFile))) {
+                const sourceHash = await hashFile(sourceFile);
+                const destHash = await hashFile(destFile);
+                if (sourceHash === destHash) {
+                    await moveToDuplicates(sourceFile, sourceHash, name, ext);
+                    return;
+                }
             }
 
             // otherwise, I increment the conflict revision
@@ -233,7 +239,7 @@ export const createOrganizer = (props: OrganizerProps) => {
 
     const organizeDir = async (dir: string): Promise<void> => {
 
-        // never process the duplicates folder
+        // I never process the duplicates folder
         if (dir.toUpperCase() === props.duplicatesDir.toUpperCase()) {
             return;
         }
