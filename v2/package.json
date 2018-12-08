@@ -10,7 +10,7 @@
     "start:app": "electron dist/main_bundle.js",
     "pack": "electron-builder --dir --project dist",
     "dist": "electron-builder  --project dist",
-    "full": "webpack --config webpack.config.js --mode production & electron-builder  --project dist"
+    "full": "webpack --config webpack.config.js --mode production & electron-builder --project dist"
   },
   "author": "",
   "license": "ISC",

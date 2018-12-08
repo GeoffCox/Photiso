@@ -1,5 +1,6 @@
 
 import * as React from "react";
+import * as path from "path";
 import { style } from "typestyle";
 import { url } from "csx";
 
@@ -12,9 +13,9 @@ const headerClass = style({
     margin: "0 0 15px 0"
 });
 
-let logoLocation = "file:///static/photiso.png";
+let logoLocation = "file:///" + "static/photiso.png";
 if (process.env.NODE_ENV === 'development') {
-    logoLocation = "static/photiso.png";
+    logoLocation = "/static/photiso.png";
 }
 
 const photisoLogo = style({
@@ -34,7 +35,7 @@ const headerDescriptionClass = style({
 export class Header extends React.Component<{}, {}> {
 
     render() {
-        return <div className={headerClass}>
+        return <div className={headerClass} title={logoLocation}>
                 <div className={photisoLogo}></div>
                 <div className={headerDescriptionClass}>Photiso organizes your photos by date taken</div>
             </div>;

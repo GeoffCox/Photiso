@@ -61,7 +61,7 @@ module.exports = [
       extensions: [".ts", ".tsx", ".js", ".json"]
     },
 
-    // Tells webpack that we are producing a bundle intended to run as electron's main entry poi.
+    // Tells webpack that we are producing a bundle intended to run as electron's main entry point.
     target: "electron-main"
   },
   //--- React Application ---
@@ -128,6 +128,7 @@ module.exports = [
       new webpack.HotModuleReplacementPlugin(),
       new CopyWebpackPlugin([
         { from: 'src/static/photiso.png', to: 'static/photiso.png', toType: 'file' }, 
+        { from: 'src/static/icon.ico', to: 'static/icon.ico', toType: 'file' }, 
         { from: 'electron_package.json', to: 'package.json', toType: 'file' }]),
       new HtmlWebpackPlugin({
         title: 'Photiso',

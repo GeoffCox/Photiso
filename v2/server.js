@@ -3,7 +3,9 @@ var express = require('express');
 
 var app = express();
 
-(function() {
+
+
+(function() {  
   // Step 1: Create & configure a webpack compiler
   var webpack = require('webpack');
   var webpackConfig = require(process.env.WEBPACK_CONFIG ? process.env.WEBPACK_CONFIG : './webpack.config.js');
@@ -12,6 +14,10 @@ var app = express();
   var compiler = webpack(appWebpackConfig);
 
   // Step 2: Attach the dev middleware to the compiler & the server
+  
+  // allow the static files to be served
+  app.use('/static', express.static('static'))  
+  
   app.use(require("webpack-dev-middleware")(compiler, {
     headers: {
         "Access-Control-Allow-Origin": "http://localhost"
