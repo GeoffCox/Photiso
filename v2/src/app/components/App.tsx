@@ -145,15 +145,13 @@ export class App extends React.Component<AppProps, {}> {
                         window.close();
                     }
                 }, 500);
-            }
 
-            e.preventDefault();
-            e.returnValue = '';
-            return "Please wait...";
-    
+                
+                e.returnValue = 'Please wait...';
+            }
         }
 
     };
 
-    
+
 }

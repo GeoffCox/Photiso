@@ -205,8 +205,8 @@ export const createOrganizer = (props: OrganizerProps) => {
                     props.onNoOp(sourceFile);
                 }
                 return;
-            }            
-            
+            }
+
             // if there are no files with the same name (not considering extension)
             // I move the file
             const existingFiles = await globby(`${dir}/${destName}.*`);

@@ -7,12 +7,6 @@ export default class Main {
   static mainWindow: Electron.BrowserWindow;
   static application: Electron.App;
 
-  private static onWindowAllClosed() {
-    if (process.platform !== "darwin") {
-      Main.application.quit();
-    }
-  }
-
   private static appRenderer = undefined;
 
   private static onRegisterAppRenderer = (e: any) =>
@@ -21,15 +15,19 @@ export default class Main {
   }
 
   private static onClose(e: Event) {
-    console.log('main onClose');
     if (Main.appRenderer !== undefined) {
       Main.appRenderer.send('main-close-window');
     }
   }
 
   private static onClosed(e: Event) {
-    console.log('main onClosed');
     Main.mainWindow = null;
+  }
+
+  private static onWindowAllClosed() {
+    if (process.platform !== "darwin") {
+      Main.application.quit();
+    }
   }
 
   private static onReady() {
