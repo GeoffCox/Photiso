@@ -8,7 +8,7 @@ export type LastRunInfo = {
     readonly duplicatesDir: string;
 }
 
-const lastRunDir = path.join(os.tmpdir(), 'photiso');
+const lastRunDir = path.join(os.homedir(), '.photiso');
 const lastRunFile = path.format({ dir: lastRunDir, base: 'lastRun.json' });
 
 export async function loadLastRunInfo(): Promise<LastRunInfo> {

@@ -1,11 +1,5 @@
 import { observable, computed } from "mobx";
 
-const initialSlides = [
-
-  "# exhibitext\r\n *No slides here yet.* \r\n\r\n To get started click the '...' to select a file to display. "
-
-];
-
 export enum OrganizerStatus {
   Waiting,
   Running
@@ -17,13 +11,13 @@ export default class AppModel {
   public status: OrganizerStatus = OrganizerStatus.Waiting;
 
   @observable
-  public unorganizedDir: string = "D:\\_Geoff\\GitHub\\Photiso\\v2\\test\\current\\unorganized";
+  public unorganizedDir: string = "";
 
   @observable
-  public organizedDir: string = "D:\\_Geoff\\GitHub\\Photiso\\v2\\test\\current\\organized";
+  public organizedDir: string = "";
 
   @observable
-  public duplicatesDir: string = "D:\\_Geoff\\GitHub\\Photiso\\v2\\test\\current\\duplicates";
+  public duplicatesDir: string = "";
 
   @observable
   public fileCount: number = 0;

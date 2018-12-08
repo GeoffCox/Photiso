@@ -1,6 +1,8 @@
 
 import { observer } from "mobx-react";
 import * as React from "react";
+import * as os from "os";
+import * as path from "path";
 import AppModel from "../models/AppModel";
 import { Stats } from "./Stats"
 import { OrganizerActions } from "./OrganizeActions";
@@ -8,7 +10,7 @@ import { OrganizedDirInput } from "./OrganizedDirInput";
 import { UnorganizedDirInput } from "./UnorganizedDirInput";
 import { DuplicatesDirInput } from "./DuplicatesDirInput";
 import { Header } from "./Header";
-import { loadLastRunInfo, saveLastRunInfo } from "../lastRun";
+import { loadLastRunInfo, saveLastRunInfo } from "../LastRun";
 import { ipcRenderer } from "electron";
 
 /*
@@ -95,6 +97,12 @@ export class App extends React.Component<AppProps, {}> {
                 model.unorganizedDir = info.unorganizedDir;
                 model.organizedDir = info.organizedDir;
                 model.duplicatesDir = info.duplicatesDir;
+            }
+            else {
+                const pictureDir = path.join(os.homedir(), 'pictures');
+                model.unorganizedDir = path.join(pictureDir, 'unorganized')
+                model.organizedDir = path.join(pictureDir, 'organized')
+                model.duplicatesDir = path.join(pictureDir, 'duplicates')
             }
         });
     }
