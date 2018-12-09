@@ -303,6 +303,16 @@ export const createOrganizer = (props: OrganizerProps) => {
     }
 
     const organize = async (): Promise<void> => {
+
+        try {
+            await fs.access(props.unorganizedDir, fs.constants.F_OK);
+        }
+        catch (err) {
+            if (err.code === 'ENOENT') {
+                return;
+            }
+        }
+        
         return organizeDir(props.unorganizedDir);
     };
 
