@@ -8,7 +8,7 @@ import { style } from "typestyle";
 import electron = require("electron");
 import { url } from "csx";
 
-const statSectionClass = style({
+const statsBarClass = style({
     borderTop: "1px solid #CCCCCC",
     flexGrow: 0,
     flexShrink: 0,
@@ -66,16 +66,16 @@ const statLabelClass = style({
     flexGrow: 0
 });
 
-export interface StatsProps { model: AppModel; }
+export interface StatsBarProps { model: AppModel; }
 
 @observer
-export class Stats extends React.Component<StatsProps, {}> {
+export class StatsBar extends React.Component<StatsBarProps, {}> {
 
     // renders a row of statistics from organizing photos
     render() {
         const { model } = this.props;
 
-        return (<div className={statSectionClass}>
+        return (<div className={statsBarClass}>
                 <div className={statClass}>
                     <div className={foundCountClass}>{model.fileCount}</div>
                     <div className={statLabelClass}>found</div>

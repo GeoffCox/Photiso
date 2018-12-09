@@ -4,7 +4,7 @@ import * as React from "react";
 import * as os from "os";
 import * as path from "path";
 import AppModel from "../models/AppModel";
-import { Stats } from "./Stats"
+import { StatsBar } from "./StatsBar"
 import { OrganizerActions } from "./OrganizeActions";
 import { OrganizedDirInput } from "./OrganizedDirInput";
 import { UnorganizedDirInput } from "./UnorganizedDirInput";
@@ -124,7 +124,7 @@ export class App extends React.Component<AppProps, {}> {
             <OrganizedDirInput model={model} />
             <DuplicatesDirInput model={model} />
             <OrganizerActions model={model} />
-            <Stats model={model} />
+            <StatsBar model={model} />
         </div>;
     }
 

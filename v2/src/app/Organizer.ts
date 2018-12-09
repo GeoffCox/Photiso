@@ -28,7 +28,6 @@ export type Organizer = {
     organize(): Promise<void>;
 }
 
-
 export const createOrganizer = (props: OrganizerProps) => {
 
     // pads a number with zeros as necessary
