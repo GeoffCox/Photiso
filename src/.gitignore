@@ -1,4 +1,0 @@
-*.suo
-*.user
-packages/**
-!packages/repositories.config
