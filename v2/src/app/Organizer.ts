@@ -94,11 +94,11 @@ export const createOrganizer = (props: OrganizerProps) => {
             if (!isNullOrUndefined(exifData) && !isNullOrUndefined(exifData.exif)) {
 
                 if (!isNullOrUndefined(exifData.exif.DateTimeOriginal)) {
-                    exifOriginalDate = moment(exifData.exif.DateTimeOriginal).toDate();
+                    exifOriginalDate = moment(exifData.exif.DateTimeOriginal).utc().toDate();
                 }
 
                 if (!isNullOrUndefined(exifData.exif.DateTimeDigitized)) {
-                    exifDigitizedDate = moment(exifData.exif.DateTimeDigitized).toDate();
+                    exifDigitizedDate = moment(exifData.exif.DateTimeDigitized).utc().toDate();
                 }
 
                 const dateTaken = earliestDate(exifOriginalDate, exifDigitizedDate);
@@ -112,10 +112,11 @@ export const createOrganizer = (props: OrganizerProps) => {
         }
 
         const stats = await fs.stat(file);
-        const ctime = moment(stats.ctimeMs);
-        const mtime = moment(stats.mtimeMs);
+        const ctime = moment(stats.ctimeMs).toDate();
+        const mtime = moment(stats.mtimeMs).toDate();
 
-        return earliestDate(ctime.toDate(), mtime.toDate());
+        const earliestFileDate = earliestDate(ctime, mtime);
+        return earliestFileDate;
     }
 
     // <organizedDir>/yyyy/MM/IMG yyyy-MM-DD hh.mm    
@@ -312,7 +313,7 @@ export const createOrganizer = (props: OrganizerProps) => {
                 return;
             }
         }
-        
+
         return organizeDir(props.unorganizedDir);
     };
 
