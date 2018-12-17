@@ -27,7 +27,7 @@ The latest version is v2.  It should run on any Windows computer with Windows 8 
 
 ## How do I use Photiso?
 
-First, download [Photiso.zip](/downloads/photiso2.zip).  Unzip and run 'photiso Setup 2.0.0.exe'.  This will install and run Photiso.
+First, download [Photiso.zip](https://geoffcox.github.io/downloads/photiso2.zip).  Unzip and run 'photiso Setup 2.0.0.exe'.  This will install and run Photiso.
 
 When you run Photiso you are presented with 3 folders to specify.
 
