@@ -15,7 +15,7 @@ export class DuplicatesDirInput extends React.Component<DuplicatesDirInputProps,
         const { model } = this.props;
 
         return <div>
-            <div className={dirLabelClass}>Duplicates</div>
+            <div className={dirLabelClass}>Folder where duplicates of photos should be placed</div>
             <div className={dirInputSection}>
                 <input className={dirClass} value={model.duplicatesDir} onChange={this.onDirChanged} />
                 <button className={browseDirButtonClass} onClick={this.onBrowseDir}>...</button>

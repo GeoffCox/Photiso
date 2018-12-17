@@ -15,7 +15,7 @@ export class OrganizedDirInput extends React.Component<OrganizedDirInputProps, {
         const { model } = this.props;
 
         return <div>
-            <div className={dirLabelClass}>Organized</div>
+            <div className={dirLabelClass}>Destination folder where photos should be organized</div>
             <div className={dirInputSection}>
                 <input className={dirClass} value={model.organizedDir} onChange={this.onDirChanged} />
                 <button className={browseDirButtonClass} onClick={this.onBrowseDir}>...</button>
