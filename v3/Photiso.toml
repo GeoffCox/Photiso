@@ -1,0 +1,9 @@
+[directories]
+unorganized = "./test/unorganized"
+organized = "./test/organized"
+duplicates = "./test/duplicates"
+
+[options]
+showProgress = true
+showFileMoves = true
+countResult = false
