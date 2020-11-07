@@ -78,7 +78,7 @@ struct PhotoInfo {
 }
 
 fn get_photo_info(file_path: &Path) -> Result<PhotoInfo, PhotisoError> {
-    let file = File::open(&path)?;
+    let file = File::open(&file_path)?;
     let mut bufreader = std::io::BufReader::new(&file);
     let exifreader = exif::Reader::new();
     let exif = exifreader.read_from_container(&mut bufreader)?;
@@ -90,10 +90,12 @@ fn get_photo_info(file_path: &Path) -> Result<PhotoInfo, PhotisoError> {
         taken_date_time = date_time_original_value.display_value().to_string();
     }
 
-    return PhotoInfo {
-        path: PathBuf::from(&path),
+    let photoInfo = PhotoInfo {
+        path: PathBuf::from(&file_path),
         taken_date_time: taken_date_time
     };
+
+    return Ok(photoInfo);
 }
 
 // ---------------------------------------- Main  ---------------------------------------- //
