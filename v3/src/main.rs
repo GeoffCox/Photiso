@@ -3,69 +3,8 @@ use std::{ffi::OsStr, fs, io, path::PathBuf, path::Path};
 use std::fs::File;
 use std::io::prelude::*;
 use serde::*;
-use std::fmt;
 use exif::{In, Tag};
-
-
-// ---------------------------------------- PhotisoError ---------------------------------------- //
-
-#[derive(Debug)]
-enum PhotisoError {
-    General(&'static str),
-    Exif(exif::Error),
-    Io(io::Error),
-    Parse(chrono::ParseError),
-    SystemTime(std::time::SystemTimeError)
-}
-
-impl From<exif::Error> for PhotisoError {
-    fn from(err: exif::Error) -> PhotisoError {
-        PhotisoError::Exif(err)
-    }
-}
-
-impl From<io::Error> for PhotisoError {
-    fn from(err: io::Error) -> PhotisoError {
-        PhotisoError::Io(err)
-    }
-}
-
-impl From<chrono::ParseError> for PhotisoError {
-    fn from(err: chrono::ParseError) -> PhotisoError {
-        PhotisoError::Parse(err)
-    }
-}
-
-impl From<std::time::SystemTimeError> for PhotisoError {
-    fn from(err: std::time::SystemTimeError) -> PhotisoError {
-        PhotisoError::SystemTime(err)
-    }
-}
-
-
-impl std::error::Error for PhotisoError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match *self {
-            PhotisoError::General(_) => None,
-            PhotisoError::Io(ref err) => Some(err),
-            PhotisoError::Exif(ref err) => Some(err),
-            PhotisoError::Parse(ref err) => Some(err),
-            PhotisoError::SystemTime(ref err) => Some(err),
-        }
-    }
-}
-
-impl fmt::Display for PhotisoError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            PhotisoError::General(ref err) => write!(f, "Error: {}", err),
-            PhotisoError::Exif(ref err) => write!(f, "Exif error: {}", err),
-            PhotisoError::Io(ref err) => write!(f, "IO error: {}", err),
-            PhotisoError::Parse(ref err) => write!(f, "Parse error: {}", err),
-            PhotisoError::SystemTime(ref err) => write!(f, "Time error: {}", err),
-        }
-    }
-}
+use anyhow::*;
 
 // ---------------------------------------- Config ---------------------------------------- //
 
@@ -108,12 +47,12 @@ struct PhotoInfo {
     // length: Option<u64>,
 }
 
-fn get_exif_field_string_value(exif: &exif::Exif, tag: Tag) -> Result<String, PhotisoError> {
+fn get_exif_field_string_value(exif: &exif::Exif, tag: Tag) -> anyhow::Result<String> {
     let field = exif.get_field(tag, In::PRIMARY);
 
     match field {
         Some(field_value) => return Ok(field_value.display_value().with_unit(exif).to_string()),
-        None => return Err(PhotisoError::General("Exif field not found"))
+        None => return Err(anyhow!("Exif field not found"))
     }
 }
 
@@ -121,7 +60,7 @@ fn get_exif_field_string_value(exif: &exif::Exif, tag: Tag) -> Result<String, Ph
 // OffsetTime, OffsetTimeOriginal, OffsetTimeDigitized
 // SubSecTime, SubSecTimeOriginal, SubSecTimeDigitized
 // GPSDateStamp,
-fn get_photo_info(file_path: &Path) -> Result<PhotoInfo, PhotisoError> {
+fn get_photo_info(file_path: &Path) -> anyhow::Result<PhotoInfo> {
     let file = File::open(&file_path)?;
 
     let mut bufreader = std::io::BufReader::new(&file);
@@ -129,19 +68,26 @@ fn get_photo_info(file_path: &Path) -> Result<PhotoInfo, PhotisoError> {
     let exif = exifreader.read_from_container(&mut bufreader)?;
 
     let metadata = fs::metadata(file_path)?;
-    println!("{:?}", metadata.file_type());
-    println!("{:?}", metadata.created()?);
-    println!("{:?}", metadata.modified()?);
 
+    // file created
     let created_duration = metadata.created()?.duration_since(std::time::SystemTime::UNIX_EPOCH)?;
-    let mut created_date_time = chrono::Utc.timestamp(created_duration.as_secs() as i64, created_duration.subsec_nanos());
+    let created_date_time = chrono::Utc.timestamp(created_duration.as_secs() as i64, created_duration.subsec_nanos());
     println!("created_date_time: {:?}", created_date_time);
 
+    // file modified
+    let modified_duration = metadata.modified()?.duration_since(std::time::SystemTime::UNIX_EPOCH)?;
+    let modified_date_time = chrono::Utc.timestamp(modified_duration.as_secs() as i64, modified_duration.subsec_nanos());
+    println!("modified_date_time: {:?}", modified_date_time);
+
+    // exif original
     let date_time_original = get_exif_field_string_value(&exif, Tag::DateTimeOriginal)?;
     let subsec_time_original = get_exif_field_string_value(&exif, Tag::SubSecTimeOriginal)?;
+    println!("date_time_original: {:?} - {:?}", date_time_original, subsec_time_original);
 
-    println!("date_time_original: {:?}", date_time_original);
-    println!("subsec_time_original {:?}", subsec_time_original);
+    // exif digitized
+    let date_time_digitized = get_exif_field_string_value(&exif, Tag::DateTimeDigitized)?;
+    let subsec_time_digitized = get_exif_field_string_value(&exif, Tag::SubSecTimeDigitized)?;
+    println!("date_time_digitized: {:?} - {:?}", date_time_digitized, subsec_time_digitized);
 
     let photo_info = PhotoInfo {
         path: PathBuf::from(&file_path),
@@ -152,7 +98,7 @@ fn get_photo_info(file_path: &Path) -> Result<PhotoInfo, PhotisoError> {
     return Ok(photo_info);
 }
 
-fn print_all_exif(file_path: &Path) -> Result<(),PhotisoError> {
+fn print_all_exif(file_path: &Path) -> anyhow::Result<()> {
     let file = File::open(&file_path)?;
     let mut buf_reader = std::io::BufReader::new(&file);
     let exif_reader = exif::Reader::new();
@@ -177,7 +123,7 @@ fn is_photo_file(path: &Path) -> bool {
 
 // ---------------------------------------- Directories ---------------------------------------- //
 
-fn get_photo_destination_directory(photo_info: &PhotoInfo, config: &Config) -> Result<PathBuf,PhotisoError> {
+fn get_photo_destination_directory(photo_info: &PhotoInfo, config: &Config) -> anyhow::Result<PathBuf> {
 
     println!("{:?}", photo_info.taken_date_time);
     let mut file_path = PathBuf::from(&config.directories.unorganized);
@@ -186,7 +132,7 @@ fn get_photo_destination_directory(photo_info: &PhotoInfo, config: &Config) -> R
     return Ok(file_path);
 }
 
-fn organize_photo_file(file_path: &Path, config: &Config) -> Result<(),PhotisoError> {
+fn organize_photo_file(file_path: &Path, config: &Config) -> anyhow::Result<()> {
 
     print_all_exif(file_path)?;
 
@@ -201,7 +147,7 @@ fn organize_photo_file(file_path: &Path, config: &Config) -> Result<(),PhotisoEr
     Ok(())
 }
 
-fn organize_directory(dir_path: &Path, config: &Config) -> Result<(),PhotisoError> {
+fn organize_directory(dir_path: &Path, config: &Config) -> anyhow::Result<()> {
 
     // file entries immediately in this directory
     let mut entries = fs::read_dir(&dir_path)?
@@ -219,7 +165,7 @@ fn organize_directory(dir_path: &Path, config: &Config) -> Result<(),PhotisoErro
 
 // ---------------------------------------- Main  ---------------------------------------- //
 
-fn main() -> Result<(), PhotisoError> {
+fn main() -> anyhow::Result<()> {
     println!("Hello Photiso");
 
     let config_text = load_config()?;
