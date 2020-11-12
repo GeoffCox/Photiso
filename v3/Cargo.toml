@@ -8,3 +8,4 @@ edition = "2018"
 toml = "0.5.7"
 serde = { version = "1.0", features = ["derive"] }
 kamadak-exif = "0.5.2"
+chrono = "0.4.19"

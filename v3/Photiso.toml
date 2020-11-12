@@ -1,7 +1,7 @@
 [directories]
-unorganized = "./test/unorganized"
-organized = "./test/organized"
-duplicates = "./test/duplicates"
+unorganized = ".\\test_files"
+organized = ".\\test_files\\organized"
+duplicates = ".\\test_files\\duplicates"
 
 [options]
 showProgress = true
