@@ -1,7 +1,10 @@
 pub use anyhow::*;
 use chrono::TimeZone;
 use chrono::Utc;
+use data_encoding::HEXUPPER;
 use exif::{In, Tag};
+use ring::digest::{Context, Digest, SHA256};
+use std::io::Read;
 use std::{fs, fs::File, path::Path, path::PathBuf};
 
 #[derive(Debug)]
@@ -9,10 +12,7 @@ pub struct PhotoInfo {
     pub path: PathBuf,
     pub photo_date_time: chrono::DateTime<chrono::Utc>,
     pub length: u64,
-    // created_date_time: Option<String>,
-    // modified_date_time: Option<String>,
-    // file_hash: Option<String>,
-    // length: Option<u64>
+    pub hash: String,
 }
 
 pub fn get_photo_info(file_path: &Path) -> anyhow::Result<PhotoInfo> {
@@ -64,10 +64,16 @@ pub fn get_photo_info(file_path: &Path) -> anyhow::Result<PhotoInfo> {
         }
     }
 
+    let hash = sha256_digest(bufreader)?;
+    let hash_value = HEXUPPER.encode(hash.as_ref());
+    print!("{:?}", hash);
+    println!();
+
     let photo_info = PhotoInfo {
         path: PathBuf::from(&file_path),
         photo_date_time: photo_date_time,
         length: metadata.len(),
+        hash: hash_value,
     };
 
     return Ok(photo_info);
@@ -204,4 +210,19 @@ fn print_all_exif(file_path: &Path) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn sha256_digest<R: Read>(mut reader: R) -> Result<Digest> {
+    let mut context = Context::new(&SHA256);
+    let mut buffer = [0; 1024];
+
+    loop {
+        let count = reader.read(&mut buffer)?;
+        if count == 0 {
+            break;
+        }
+        context.update(&buffer[..count]);
+    }
+
+    Ok(context.finish())
 }
