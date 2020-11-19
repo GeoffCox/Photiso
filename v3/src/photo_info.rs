@@ -44,7 +44,7 @@ pub fn get_photo_info(file_path: &Path) -> anyhow::Result<PhotoInfo> {
             get_exif_chrono_date_time_pair(&exif, Tag::DateTime, Tag::SubSecTime)
         {
             photo_date_time = date_time;
-            println!("  exif date:           {:?}", date_time);
+            //println!("  exif date:           {:?}", date_time);
         }
 
         // exif DateTimeDigitized - better
@@ -52,7 +52,7 @@ pub fn get_photo_info(file_path: &Path) -> anyhow::Result<PhotoInfo> {
             get_exif_chrono_date_time_pair(&exif, Tag::DateTimeDigitized, Tag::SubSecTimeDigitized)
         {
             photo_date_time = date_time;
-            println!("  exif digitized: {:?}", date_time);
+            //println!("  exif digitized: {:?}", date_time);
         }
 
         // exif DateTimeOriginal - best
@@ -60,14 +60,14 @@ pub fn get_photo_info(file_path: &Path) -> anyhow::Result<PhotoInfo> {
             get_exif_chrono_date_time_pair(&exif, Tag::DateTimeOriginal, Tag::SubSecTimeOriginal)
         {
             photo_date_time = date_time;
-            println!("  exif original:  {:?}", date_time);
+            //println!("  exif original:  {:?}", date_time);
         }
     }
 
     let hash = sha256_digest(bufreader)?;
     let hash_value = HEXUPPER.encode(hash.as_ref());
-    print!("{:?}", hash);
-    println!();
+    //print!("{:?}", hash);
+    //println!();
 
     let photo_info = PhotoInfo {
         path: PathBuf::from(&file_path),
