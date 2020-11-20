@@ -1,25 +1,38 @@
 mod config;
-mod photo_info;
+mod file_hash;
+mod photo_date_time;
 
 use crate::config::*;
-use crate::photo_info::*;
+use crate::file_hash::*;
+use crate::photo_date_time::*;
 
-use std::{fs, io, path::Path, path::PathBuf};
+use std::{ffi::OsString, fs, io, path::Path, path::PathBuf};
 
 fn main() -> anyhow::Result<()> {
-    println!("Hello Photiso");
+    println!("----------------------------------------");
+    println!("Photiso");
 
     let config: Config = load_config()?;
 
     println!("config: {:?}", config);
+    println!("----------------------------------------");
 
     let unorganized_dir = Path::new(&config.directories.unorganized);
     organize_directory(&unorganized_dir, &config)?;
+
+    println!("----------------------------------------");
 
     Ok(())
 }
 
 fn organize_directory(dir_path: &Path, config: &Config) -> anyhow::Result<()> {
+    // Do not process the duplicates directory
+    if dir_path == config.directories.duplicates {
+        return Ok(());
+    }
+
+    on_directory_started(dir_path);
+
     let mut entries = fs::read_dir(&dir_path)?
         .map(|res| res.map(|e| e.path()))
         .collect::<Result<Vec<_>, io::Error>>()?;
@@ -35,22 +48,54 @@ fn organize_directory(dir_path: &Path, config: &Config) -> anyhow::Result<()> {
         organize_directory(&e, config)?;
     }
 
+    on_directory_finished(dir_path);
+
     Ok(())
 }
 
 fn organize_photo_file(file_path: &Path, config: &Config) -> anyhow::Result<()> {
-    //print_all_exif(file_path)?;
+    on_file_started(file_path);
 
-    let photo_info = get_photo_info(file_path)?;
-    println!("  photo_info: {:?}", photo_info);
+    let photo_date_time = get_photo_date_time(file_path)?;
 
-    let dest_dir = get_photo_destination_directory(&photo_info, config);
-    println!("  dest_dir: {:?}", dest_dir);
+    let mut conflict = 0;
+    loop {
+        let dest_path = get_photo_destination_path(file_path, &photo_date_time, conflict, config)?;
 
-    println!("----------");
+        if file_path.to_str() == dest_path.to_str() {
+            on_file_no_op(file_path);
+            break;
+        }
 
-    //let dest_path = get_photo_destination_directory(&photo_info, config)?;
-    // println!("{:?}", dest_path);
+        if dest_path.exists() {
+            //let dest_photo_date_time = get_photo_date_time(&dest_path)?;
+
+            let from_hash = file_hash::get_file_hash(file_path)?;
+            let to_hash = file_hash::get_file_hash(&dest_path)?;
+
+            if from_hash.hash == to_hash.hash {
+                //TODO: Move to duplicates?
+                on_duplicate_moved(file_path, &dest_path);
+                break;
+            }
+
+            conflict += 1;
+            continue;
+        }
+
+        move_file(file_path, dest_path.as_ref())?;
+        on_file_moved(file_path, &dest_path);
+        break;
+    }
+
+    on_file_finished(file_path);
+    Ok(())
+}
+
+fn move_file(from: &Path, to: &Path) -> io::Result<()> {
+    let from_dir = to.parent().unwrap();
+    fs::create_dir_all(from_dir)?;
+    fs::rename(from, to)?;
 
     Ok(())
 }
@@ -60,9 +105,14 @@ fn is_photo_file(path: &Path) -> bool {
         if let Some(ext) = path.extension() {
             if let Some(str_ext) = ext.to_str() {
                 match str_ext.to_lowercase().as_str() {
+                    "bmp" => return true,
+                    "gif" => return true,
                     "jpg" => return true,
                     "jpeg" => return true,
+                    "png" => return true,
+                    "tif" => return true,
                     "tiff" => return true,
+                    "wmp" => return true,
                     _ => return false,
                 }
             }
@@ -72,66 +122,73 @@ fn is_photo_file(path: &Path) -> bool {
     false
 }
 
-fn get_photo_destination_directory(
-    photo_info: &PhotoInfo,
+fn get_photo_destination_path(
+    file_path: &Path,
+    date_time: &chrono::DateTime<Utc>,
+    conflict: u32,
     config: &Config,
 ) -> anyhow::Result<PathBuf> {
-    let date_time = &photo_info.photo_date_time;
-    let extension = photo_info.path.extension().unwrap();
+    let extension = OsString::from(
+        file_path
+            .extension()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_lowercase(),
+    );
 
     let year = date_time.format("%Y").to_string();
     let month = date_time.format("%m").to_string();
-    let file_name = date_time.format("%Y-%m-%d %H.%M.%S.%f").to_string();
+    let mut file_name = date_time.format("%Y-%m-%d %H.%M.%S.%f").to_string();
+
+    if conflict > 0 {
+        file_name = format!("{}.{:03}.jpg", file_name, conflict);
+    } else {
+        file_name = format!("{}.jpg", file_name);
+    }
 
     let mut file_path = PathBuf::from(&config.directories.organized);
     file_path.push(PathBuf::from(year).as_path());
     file_path.push(PathBuf::from(month).as_path());
     file_path.push(PathBuf::from(file_name).as_path());
-    file_path.set_extension(PathBuf::from(extension));
+    file_path.set_extension(extension);
 
     return Ok(file_path);
 }
 
-// ---------------------------------------- Main  ---------------------------------------- //
+// called when procesing a directory starts
+fn on_directory_started(_dir: &Path) {}
 
-// fn list_some_files() -> io::Result<()> {
-//     let mut entries = fs::read_dir("C:\\GitHub\\Photiso\\v2")?
-//         .map(|res| res.map(|e| e.path()))
-//         .collect::<Result<Vec<_>, io::Error>>()?;
-//     entries.sort();
+// called when procesing a directory finishes
+fn on_directory_finished(_dir: &Path) {}
 
-//     for entry in entries.into_iter(){
-//         println!("{:?}", entry);
-//     }
-//     Ok(())
-// }
+// called when procesing a file starts
+fn on_file_started(_file: &Path) {}
 
-// props: unorganizedDir, organizedDir, duplicatesDir,
-// onShouldContinue, onStartedDir, onFinishedDir, onStartedFile, onFinishedFile
-// onNoOp, onSkipped, onMoved, onDuplicateMoved, onError
-// photo info: fileName, takenDateTime, createdDateTime, modifiedDateTime, fileHash, length, bestDateTime
+// called when procesing a file finishes
+fn on_file_finished(_file: &Path) {}
 
-// fn organize() {}
-// fn organize_directory() {}
-// fn organize_file() {}
-// fn get_photo_info() {}
-// fn move_photo() {}
-// fn is_photo {}
-// fn is_same_photo() {}
-// fn get_photo_destination_directory() {}
-// fn get_photo_destination_filename() {}
+// called when a file is moved
+fn on_file_moved(_from: &Path, _to: &Path) {
+    print!("M");
+}
 
-/*
+// called when a duplicate file is found and moved
+fn on_duplicate_moved(_from: &Path, _to: &Path) {
+    print!("D");
+}
 
-organize()
-    verify unorganized directory exists
-    organize_directory
+// called when a file is already in its correct location
+fn on_file_no_op(_file: &Path) {
+    print!("-");
+}
 
+// called when a file is skipped (not a photo)
+fn on_file_skipped(_file: &Path) {
+    print!("S");
+}
 
-organize_directory(dir)
-    if dir is duplicates directory return
-    for each file in dir
-        organize_file(file)
-    for each child dir in dir
-        organize_directory(child)
-*/
+// called when there is a problem processing a file
+fn on_file_error(_file: &Path) {
+    print!("E");
+}

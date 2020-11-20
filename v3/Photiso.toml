@@ -1,5 +1,5 @@
 [directories]
-unorganized = ".\\test_files"
+unorganized = ".\\test_files\\unorganized"
 organized = ".\\test_files\\organized"
 duplicates = ".\\test_files\\duplicates"
 

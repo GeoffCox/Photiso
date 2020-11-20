@@ -1,37 +1,25 @@
-pub use anyhow::*;
 use chrono::TimeZone;
-use chrono::Utc;
-use data_encoding::HEXUPPER;
 use exif::{In, Tag};
-use ring::digest::{Context, Digest, SHA256};
-use std::io::Read;
-use std::{fs, fs::File, path::Path, path::PathBuf};
+use std::{fs, fs::File, path::Path};
 
-#[derive(Debug)]
-pub struct PhotoInfo {
-    pub path: PathBuf,
-    pub photo_date_time: chrono::DateTime<chrono::Utc>,
-    pub length: u64,
-    pub hash: String,
-}
+pub use anyhow::*;
+pub use chrono::{DateTime, Utc};
 
-pub fn get_photo_info(file_path: &Path) -> anyhow::Result<PhotoInfo> {
+pub fn get_photo_date_time(file_path: &Path) -> anyhow::Result<chrono::DateTime<Utc>> {
     let file = File::open(&file_path)?;
-
-    println!("file: {:?}", file_path);
-
     let metadata = fs::metadata(file_path)?;
 
     // file created
     let created_date_time = convert_system_time_to_chrono_date_time(&metadata.created()?)?;
-    println!("  created:   {:?}", created_date_time);
+    //println!("  created:   {:?}", created_date_time);
 
     // file modified
     let modified_date_time = convert_system_time_to_chrono_date_time(&metadata.modified()?)?;
-    println!("  modified:  {:?}", modified_date_time);
+    //println!("  modified:  {:?}", modified_date_time);
 
     let mut photo_date_time: chrono::DateTime<Utc> = created_date_time;
 
+    // earliest of created and modified
     if modified_date_time < created_date_time {
         photo_date_time = modified_date_time;
     }
@@ -64,25 +52,11 @@ pub fn get_photo_info(file_path: &Path) -> anyhow::Result<PhotoInfo> {
         }
     }
 
-    let hash = sha256_digest(bufreader)?;
-    let hash_value = HEXUPPER.encode(hash.as_ref());
-    //print!("{:?}", hash);
-    //println!();
-
-    let photo_info = PhotoInfo {
-        path: PathBuf::from(&file_path),
-        photo_date_time: photo_date_time,
-        length: metadata.len(),
-        hash: hash_value,
-    };
-
-    return Ok(photo_info);
+    return Ok(photo_date_time);
 }
 
-fn convert_exif_to_chrono_date_time(
-    exif_date_time: &exif::DateTime,
-) -> chrono::DateTime<chrono::Utc> {
-    let date = chrono::Utc.ymd(
+fn convert_exif_to_chrono_date_time(exif_date_time: &exif::DateTime) -> chrono::DateTime<Utc> {
+    let date = Utc.ymd(
         exif_date_time.year as i32,
         exif_date_time.month as u32,
         exif_date_time.day as u32,
@@ -144,7 +118,7 @@ fn convert_system_time_to_chrono_date_time(
     value: &std::time::SystemTime,
 ) -> anyhow::Result<chrono::DateTime<Utc>> {
     let created_duration = value.duration_since(std::time::SystemTime::UNIX_EPOCH)?;
-    Ok(chrono::Utc.timestamp(
+    Ok(Utc.timestamp(
         created_duration.as_secs() as i64,
         created_duration.subsec_nanos(),
     ))
@@ -210,19 +184,4 @@ fn print_all_exif(file_path: &Path) -> anyhow::Result<()> {
     }
 
     Ok(())
-}
-
-fn sha256_digest<R: Read>(mut reader: R) -> Result<Digest> {
-    let mut context = Context::new(&SHA256);
-    let mut buffer = [0; 1024];
-
-    loop {
-        let count = reader.read(&mut buffer)?;
-        if count == 0 {
-            break;
-        }
-        context.update(&buffer[..count]);
-    }
-
-    Ok(context.finish())
 }
