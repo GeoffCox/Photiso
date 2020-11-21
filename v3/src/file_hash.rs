@@ -4,13 +4,7 @@ use ring::digest::{Context, SHA256};
 use std::io::Read;
 use std::{fs, fs::File, path::Path};
 
-#[derive(Debug)]
-pub struct HashInfo {
-    pub hash: String,
-    pub length: u64,
-}
-
-pub fn get_file_hash(file_path: &Path) -> anyhow::Result<HashInfo> {
+pub fn get_file_hash(file_path: &Path) -> anyhow::Result<String> {
     let file = File::open(&file_path)?;
     let metadata = fs::metadata(file_path)?;
 
@@ -28,11 +22,5 @@ pub fn get_file_hash(file_path: &Path) -> anyhow::Result<HashInfo> {
     }
 
     let hash = context.finish();
-
-    let hash_info = HashInfo {
-        hash: HEXUPPER.encode(hash.as_ref()),
-        length: metadata.len(),
-    };
-
-    Ok(hash_info)
+    Ok(HEXUPPER.encode(hash.as_ref()))
 }
