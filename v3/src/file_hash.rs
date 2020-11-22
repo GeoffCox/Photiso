@@ -1,12 +1,13 @@
-pub use anyhow::*;
 use data_encoding::HEXUPPER;
 use ring::digest::{Context, SHA256};
-use std::io::Read;
-use std::{fs, fs::File, path::Path};
+use std::{fs::File, io::Read, path::Path};
 
+#[doc(hidden)]
+pub use anyhow::*;
+
+/// Gets the SHA256 digest hash fo a file
 pub fn get_file_hash(file_path: &Path) -> anyhow::Result<String> {
     let file = File::open(&file_path)?;
-    let metadata = fs::metadata(file_path)?;
 
     let mut bufreader = std::io::BufReader::new(&file);
 

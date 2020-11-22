@@ -2,10 +2,13 @@ use chrono::TimeZone;
 use exif::{In, Tag};
 use std::{fs, fs::File, path::Path};
 
+#[doc(hidden)]
 pub use anyhow::*;
+
+#[doc(hidden)]
 pub use chrono::{DateTime, Utc};
 
-/// DateTime information for a photo
+/// Date-time information for a photo
 pub struct PhotoDateTimeInfo {
     /// When the file was created
     created: chrono::DateTime<Utc>,
@@ -15,11 +18,14 @@ pub struct PhotoDateTimeInfo {
     exif_base: Option<chrono::DateTime<Utc>>,
     /// When the photo was originally taken (most precise)
     exif_original: Option<chrono::DateTime<Utc>>,
-    /// When the photo was digitized to camera memeory
+    /// When the photo was digitized to camera memory
     exif_digitized: Option<chrono::DateTime<Utc>>,
 }
 
 impl PhotoDateTimeInfo {
+    /// Finds the date-time that is best to use as the taken date-time.
+    /// This prefers exif original, digitized, and base (in order).
+    /// This falls back to the file's earliest created or modified date-time.
     pub fn best(&self) -> chrono::DateTime<Utc> {
         if let Some(exif_original) = self.exif_original {
             return exif_original.clone();
@@ -40,6 +46,7 @@ impl PhotoDateTimeInfo {
         return self.modified.clone();
     }
 
+    /// Loads the photo date-times for a file based on metadata and EXIF information.
     pub fn load(file_path: &Path) -> anyhow::Result<PhotoDateTimeInfo> {
         let file = File::open(&file_path)?;
 
@@ -89,6 +96,7 @@ impl PhotoDateTimeInfo {
 
 // -------------------- std::time::SystemTime -> chrono::DateTime conversion -------------------- //
 
+#[doc(hidden)]
 fn convert_system_time_to_chrono_date_time(
     value: &std::time::SystemTime,
 ) -> anyhow::Result<chrono::DateTime<Utc>> {
@@ -101,6 +109,7 @@ fn convert_system_time_to_chrono_date_time(
 
 // -------------------- EXIF -> chrono::DateTime conversion -------------------- //
 
+#[doc(hidden)]
 fn convert_exif_to_chrono_date_time(exif_date_time: &exif::DateTime) -> chrono::DateTime<Utc> {
     let date = Utc.ymd(
         exif_date_time.year as i32,
@@ -121,6 +130,7 @@ fn convert_exif_to_chrono_date_time(exif_date_time: &exif::DateTime) -> chrono::
     }
 }
 
+#[doc(hidden)]
 fn convert_exif_value_to_date_time(value: &exif::Value) -> Option<exif::DateTime> {
     if let exif::Value::Ascii(lines) = value {
         if lines.len() > 0 {
@@ -133,6 +143,7 @@ fn convert_exif_value_to_date_time(value: &exif::Value) -> Option<exif::DateTime
     None
 }
 
+#[doc(hidden)]
 fn convert_exif_value_to_u32(value: &exif::Value) -> Option<u32> {
     if let exif::Value::Ascii(lines) = value {
         if lines.len() > 0 {
@@ -147,6 +158,7 @@ fn convert_exif_value_to_u32(value: &exif::Value) -> Option<u32> {
     None
 }
 
+#[doc(hidden)]
 #[allow(dead_code)]
 fn convert_exif_value_to_string(value: &exif::Value) -> Option<String> {
     if let exif::Value::Ascii(lines) = value {
@@ -162,6 +174,7 @@ fn convert_exif_value_to_string(value: &exif::Value) -> Option<String> {
 
 // -------------------- EXIF helpers -------------------- //
 
+#[doc(hidden)]
 fn get_exif_chrono_date_time(exif: &exif::Exif, tag: Tag) -> Option<chrono::DateTime<Utc>> {
     if let Some(field) = exif.get_field(tag, In::PRIMARY) {
         if let Some(exif_date_time) = convert_exif_value_to_date_time(&field.value) {
@@ -173,6 +186,7 @@ fn get_exif_chrono_date_time(exif: &exif::Exif, tag: Tag) -> Option<chrono::Date
     None
 }
 
+#[doc(hidden)]
 fn get_exif_field_u32(exif: &exif::Exif, tag: Tag) -> Option<u32> {
     if let Some(field) = exif.get_field(tag, In::PRIMARY) {
         return convert_exif_value_to_u32(&field.value);
@@ -181,6 +195,7 @@ fn get_exif_field_u32(exif: &exif::Exif, tag: Tag) -> Option<u32> {
     None
 }
 
+#[doc(hidden)]
 #[allow(dead_code)]
 fn get_exif_field_string(exif: &exif::Exif, tag: Tag) -> Option<String> {
     if let Some(field) = exif.get_field(tag, In::PRIMARY) {
@@ -190,6 +205,7 @@ fn get_exif_field_string(exif: &exif::Exif, tag: Tag) -> Option<String> {
     None
 }
 
+#[doc(hidden)]
 fn get_exif_chrono_date_time_pair(
     exif: &exif::Exif,
     date_tag: Tag,
@@ -206,6 +222,7 @@ fn get_exif_chrono_date_time_pair(
     None
 }
 
+#[doc(hidden)]
 #[allow(dead_code)]
 fn print_all_exif(file_path: &Path) -> anyhow::Result<()> {
     let file = File::open(&file_path)?;
