@@ -8,6 +8,40 @@ use crate::photo_date_time::*;
 
 use std::{ffi::OsString, fs, io, path::Path, path::PathBuf};
 
+enum PhotisoEvent<'a> {
+    DirStarted {
+        dir: &'a Path,
+    },
+    DirFinished {
+        dir: &'a Path,
+    },
+    FileStarted {
+        file: &'a Path,
+    },
+    FileFinished {
+        file: &'a Path,
+    },
+    FileError {
+        file: &'a Path,
+        error: anyhow::Error,
+    },
+    Moved {
+        from: &'a Path,
+        to: &'a Path,
+    },
+    NoOp {
+        file: &'a Path,
+    },
+    DuplicateMoved {
+        from: &'a Path,
+        to: &'a Path,
+    },
+    Skipped {
+        file: &'a Path,
+        reason: String,
+    },
+}
+
 fn main() -> anyhow::Result<()> {
     println!("----------------------------------------");
     println!("Photiso");
@@ -36,7 +70,7 @@ fn organize_directory(dir_path: &Path, config: &Config) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    on_directory_started(dir_path, config);
+    on_photiso_event(PhotisoEvent::DirStarted { dir: dir_path }, config);
 
     let mut entries = fs::read_dir(&dir_path)?
         .map(|res| res.map(|e| e.path()))
@@ -53,17 +87,41 @@ fn organize_directory(dir_path: &Path, config: &Config) -> anyhow::Result<()> {
         organize_directory(&e, config)?;
     }
 
-    on_directory_finished(dir_path, config);
+    on_photiso_event(PhotisoEvent::DirFinished { dir: dir_path }, config);
 
     Ok(())
 }
 
 fn organize_file(file_path: &Path, config: &Config) -> anyhow::Result<()> {
-    on_file_started(file_path, config);
+    on_photiso_event(PhotisoEvent::FileStarted { file: file_path }, config);
 
     // only handle files with photo extensions
     if !is_photo_file(file_path) {
-        on_file_skipped(file_path, config);
+        on_photiso_event(
+            PhotisoEvent::Skipped {
+                file: file_path,
+                reason: String::from("Not a photo."),
+            },
+            config,
+        );
+        return Ok(());
+    }
+
+    // never move a file with ! in the name
+    if file_path
+        .file_stem()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .contains("!")
+    {
+        on_photiso_event(
+            PhotisoEvent::Skipped {
+                file: file_path,
+                reason: String::from("Photo file name contains '!'."),
+            },
+            config,
+        );
         return Ok(());
     }
 
@@ -76,7 +134,7 @@ fn organize_file(file_path: &Path, config: &Config) -> anyhow::Result<()> {
 
         // if the file is already in the right place, do nothing
         if file_path.to_str() == dest_path.to_str() {
-            on_file_no_op(file_path, config);
+            on_photiso_event(PhotisoEvent::NoOp { file: file_path }, config);
             break;
         }
 
@@ -96,12 +154,18 @@ fn organize_file(file_path: &Path, config: &Config) -> anyhow::Result<()> {
         } else {
             // move the file to the destination
             move_file(file_path, dest_path.as_ref())?;
-            on_file_moved(file_path, &dest_path, config);
+            on_photiso_event(
+                PhotisoEvent::Moved {
+                    from: file_path,
+                    to: &dest_path,
+                },
+                config,
+            );
             break;
         }
     }
 
-    on_file_finished(file_path, config);
+    on_photiso_event(PhotisoEvent::FileFinished { file: file_path }, config);
     Ok(())
 }
 
@@ -116,7 +180,7 @@ fn move_to_duplicates(
         let dest_path = get_photo_duplicates_path(file_path, date_time, hash, conflict, config)?;
 
         if file_path.to_str() == dest_path.to_str() {
-            on_file_no_op(file_path, config);
+            on_photiso_event(PhotisoEvent::NoOp { file: file_path }, config);
             break;
         }
 
@@ -126,7 +190,13 @@ fn move_to_duplicates(
         }
 
         move_file(file_path, dest_path.as_ref())?;
-        on_duplicate_moved(file_path, &dest_path, config);
+        on_photiso_event(
+            PhotisoEvent::DuplicateMoved {
+                from: file_path,
+                to: &dest_path,
+            },
+            config,
+        );
         break;
     }
 
@@ -275,83 +345,64 @@ where
     }
 }
 
-// called when procesing a directory starts
-fn on_directory_started(dir: &Path, config: &Config) {
-    let trim_dir = try_trim_prefix(dir, &config.directories.unorganized);
-    println!(
-        "Dir: (unorganized){}{:?}",
-        std::path::MAIN_SEPARATOR,
-        trim_dir
-    );
-}
+fn on_photiso_event(event: PhotisoEvent, config: &Config) {
+    match event {
+        PhotisoEvent::DirStarted { dir } => {
+            let trim_dir = try_trim_prefix(dir, &config.directories.unorganized);
+            println!(
+                "Dir: (unorganized){}{:?}",
+                std::path::MAIN_SEPARATOR,
+                trim_dir
+            );
+        }
+        PhotisoEvent::FileStarted { file } => {
+            let trim_file = try_trim_prefix(file, &config.directories.unorganized);
+            println!(
+                "  File: (unorganized){}{:?}",
+                std::path::MAIN_SEPARATOR,
+                trim_file
+            );
+        }
+        PhotisoEvent::Moved { from, to } => {
+            let trim_from = try_trim_prefix(from, &config.directories.unorganized);
+            let trim_to = try_trim_prefix(to, &config.directories.organized);
+            println!(
+                "    Moved: (unorganized){}{:?} -> (organized){}{:?}",
+                std::path::MAIN_SEPARATOR,
+                trim_from,
+                std::path::MAIN_SEPARATOR,
+                trim_to
+            );
+        }
+        PhotisoEvent::DuplicateMoved { from, to } => {
+            let trim_from = try_trim_prefix(from, &config.directories.unorganized);
+            let trim_to = try_trim_prefix(to, &config.directories.duplicates);
+            println!(
+                "    Moved: (unorganized){}{:?} -> (duplicates){}{:?}",
+                std::path::MAIN_SEPARATOR,
+                trim_from,
+                std::path::MAIN_SEPARATOR,
+                trim_to
+            );
+        }
+        PhotisoEvent::NoOp { file } => {
+            let trim_file = try_trim_prefix(file, &config.directories.unorganized);
+            println!(
+                "    No-op: (organized){}{:?}",
+                std::path::MAIN_SEPARATOR,
+                trim_file
+            );
+        }
+        PhotisoEvent::Skipped { file, reason } => {
+            let trim_file = try_trim_prefix(file, &config.directories.unorganized);
+            println!(
+                "    Skipped - {}: (unorganized){}{:?}",
+                reason,
+                std::path::MAIN_SEPARATOR,
+                trim_file
+            );
+        }
 
-// called when procesing a directory finishes
-fn on_directory_finished(_dir: &Path, _config: &Config) {}
-
-// called when procesing a file starts
-fn on_file_started(file: &Path, config: &Config) {
-    let trim_file = try_trim_prefix(file, &config.directories.unorganized);
-    println!(
-        "  File: (unorganized){}{:?}",
-        std::path::MAIN_SEPARATOR,
-        trim_file
-    );
-}
-
-// called when procesing a file finishes
-fn on_file_finished(_file: &Path, _config: &Config) {}
-
-// called when a file is moved
-fn on_file_moved(from: &Path, to: &Path, config: &Config) {
-    //print!("M");
-    let trim_from = try_trim_prefix(from, &config.directories.unorganized);
-    let trim_to = try_trim_prefix(to, &config.directories.organized);
-    println!(
-        "    Moved: (unorganized){}{:?} -> (organized){}{:?}",
-        std::path::MAIN_SEPARATOR,
-        trim_from,
-        std::path::MAIN_SEPARATOR,
-        trim_to
-    );
-}
-
-// called when a duplicate file is found and moved
-fn on_duplicate_moved(from: &Path, to: &Path, config: &Config) {
-    //print!("D");
-    let trim_from = try_trim_prefix(from, &config.directories.unorganized);
-    let trim_to = try_trim_prefix(to, &config.directories.duplicates);
-    println!(
-        "    Move: (unorganized){}{:?} -> (duplicates){}{:?}",
-        std::path::MAIN_SEPARATOR,
-        trim_from,
-        std::path::MAIN_SEPARATOR,
-        trim_to
-    );
-}
-
-// called when a file is already in its correct location
-fn on_file_no_op(file: &Path, config: &Config) {
-    //print!("-");
-    let trim_file = try_trim_prefix(file, &config.directories.unorganized);
-    println!(
-        "    No-op: (organized){}{:?}",
-        std::path::MAIN_SEPARATOR,
-        trim_file
-    );
-}
-
-// called when a file is skipped (not a photo)
-fn on_file_skipped(file: &Path, config: &Config) {
-    //print!("S");
-    let trim_file = try_trim_prefix(file, &config.directories.unorganized);
-    println!(
-        "    Skipped: (unorganized){}{:?}",
-        std::path::MAIN_SEPARATOR,
-        trim_file
-    );
-}
-
-// called when there is a problem processing a file
-fn on_file_error(_file: &Path, _config: &Config) {
-    print!("E");
+        _ => {}
+    }
 }
