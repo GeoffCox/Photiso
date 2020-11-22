@@ -19,71 +19,87 @@ pub struct PhotoDateTimeInfo {
     exif_digitized: Option<chrono::DateTime<Utc>>,
 }
 
-pub fn get_best(info: &PhotoDateTimeInfo) -> chrono::DateTime<Utc> {
-    if let Some(exif_original) = info.exif_original {
-        return exif_original.clone();
-    }
-
-    if let Some(exif_digitized) = info.exif_digitized {
-        return exif_digitized.clone();
-    }
-
-    if let Some(exif_base) = info.exif_base {
-        return exif_base.clone();
-    }
-
-    if info.modified < info.created {
-        return info.created.clone();
-    }
-
-    return info.modified.clone();
-}
-
-pub fn get_info(file_path: &Path) -> anyhow::Result<PhotoDateTimeInfo> {
-    let file = File::open(&file_path)?;
-
-    let metadata = fs::metadata(file_path)?;
-    let created = convert_system_time_to_chrono_date_time(&metadata.created()?)?;
-    let modified = convert_system_time_to_chrono_date_time(&metadata.modified()?)?;
-
-    let mut exif_base: Option<DateTime<Utc>> = None;
-    let mut exif_original: Option<DateTime<Utc>> = None;
-    let mut exif_digitized: Option<DateTime<Utc>> = None;
-
-    let mut bufreader = std::io::BufReader::new(&file);
-    let exifreader = exif::Reader::new();
-    if let Ok(exif) = exifreader.read_from_container(&mut bufreader) {
-        if let Some(date_time) =
-            get_exif_chrono_date_time_pair(&exif, Tag::DateTime, Tag::SubSecTime)
-        {
-            exif_base = Some(date_time);
+impl PhotoDateTimeInfo {
+    pub fn best(&self) -> chrono::DateTime<Utc> {
+        if let Some(exif_original) = self.exif_original {
+            return exif_original.clone();
         }
 
-        if let Some(date_time) =
-            get_exif_chrono_date_time_pair(&exif, Tag::DateTimeOriginal, Tag::SubSecTimeOriginal)
-        {
-            exif_original = Some(date_time);
+        if let Some(exif_digitized) = self.exif_digitized {
+            return exif_digitized.clone();
         }
 
-        if let Some(date_time) =
-            get_exif_chrono_date_time_pair(&exif, Tag::DateTimeDigitized, Tag::SubSecTimeDigitized)
-        {
-            exif_digitized = Some(date_time);
+        if let Some(exif_base) = self.exif_base {
+            return exif_base.clone();
         }
+
+        if self.modified < self.created {
+            return self.created.clone();
+        }
+
+        return self.modified.clone();
     }
 
-    return Ok(PhotoDateTimeInfo {
-        created,
-        modified,
-        exif_base,
-        exif_original,
-        exif_digitized,
-    });
+    pub fn load(file_path: &Path) -> anyhow::Result<PhotoDateTimeInfo> {
+        let file = File::open(&file_path)?;
+
+        let metadata = fs::metadata(file_path)?;
+        let created = convert_system_time_to_chrono_date_time(&metadata.created()?)?;
+        let modified = convert_system_time_to_chrono_date_time(&metadata.modified()?)?;
+
+        let mut exif_base: Option<DateTime<Utc>> = None;
+        let mut exif_original: Option<DateTime<Utc>> = None;
+        let mut exif_digitized: Option<DateTime<Utc>> = None;
+
+        let mut bufreader = std::io::BufReader::new(&file);
+        let exifreader = exif::Reader::new();
+        if let Ok(exif) = exifreader.read_from_container(&mut bufreader) {
+            if let Some(date_time) =
+                get_exif_chrono_date_time_pair(&exif, Tag::DateTime, Tag::SubSecTime)
+            {
+                exif_base = Some(date_time);
+            }
+
+            if let Some(date_time) = get_exif_chrono_date_time_pair(
+                &exif,
+                Tag::DateTimeOriginal,
+                Tag::SubSecTimeOriginal,
+            ) {
+                exif_original = Some(date_time);
+            }
+
+            if let Some(date_time) = get_exif_chrono_date_time_pair(
+                &exif,
+                Tag::DateTimeDigitized,
+                Tag::SubSecTimeDigitized,
+            ) {
+                exif_digitized = Some(date_time);
+            }
+        }
+
+        return Ok(PhotoDateTimeInfo {
+            created,
+            modified,
+            exif_base,
+            exif_original,
+            exif_digitized,
+        });
+    }
 }
 
-pub fn get_photo_date_time(file_path: &Path) -> anyhow::Result<chrono::DateTime<Utc>> {
-    Ok(get_best(&get_info(file_path)?))
+// -------------------- std::time::SystemTime -> chrono::DateTime conversion -------------------- //
+
+fn convert_system_time_to_chrono_date_time(
+    value: &std::time::SystemTime,
+) -> anyhow::Result<chrono::DateTime<Utc>> {
+    let created_duration = value.duration_since(std::time::SystemTime::UNIX_EPOCH)?;
+    Ok(Utc.timestamp(
+        created_duration.as_secs() as i64,
+        created_duration.subsec_nanos(),
+    ))
 }
+
+// -------------------- EXIF -> chrono::DateTime conversion -------------------- //
 
 fn convert_exif_to_chrono_date_time(exif_date_time: &exif::DateTime) -> chrono::DateTime<Utc> {
     let date = Utc.ymd(
@@ -144,15 +160,7 @@ fn convert_exif_value_to_string(value: &exif::Value) -> Option<String> {
     None
 }
 
-fn convert_system_time_to_chrono_date_time(
-    value: &std::time::SystemTime,
-) -> anyhow::Result<chrono::DateTime<Utc>> {
-    let created_duration = value.duration_since(std::time::SystemTime::UNIX_EPOCH)?;
-    Ok(Utc.timestamp(
-        created_duration.as_secs() as i64,
-        created_duration.subsec_nanos(),
-    ))
-}
+// -------------------- EXIF helpers -------------------- //
 
 fn get_exif_chrono_date_time(exif: &exif::Exif, tag: Tag) -> Option<chrono::DateTime<Utc>> {
     if let Some(field) = exif.get_field(tag, In::PRIMARY) {

@@ -67,7 +67,8 @@ fn organize_file(file_path: &Path, config: &Config) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let photo_date_time = get_photo_date_time(file_path)?;
+    let photo_date_time_info = PhotoDateTimeInfo::load(file_path)?;
+    let photo_date_time = photo_date_time_info.best();
 
     let mut conflict = 0;
     loop {
