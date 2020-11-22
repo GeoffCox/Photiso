@@ -79,7 +79,16 @@ fn organize_directory(dir_path: &Path, config: &Config) -> anyhow::Result<()> {
 
     // organize files in this directory
     for e in entries.iter().filter(|e| e.is_file()) {
-        organize_file(&e, config)?;
+        match organize_file(&e, config) {
+            Ok(_) => {}
+            Err(err) => on_photiso_event(
+                PhotisoEvent::FileError {
+                    file: &e,
+                    error: err,
+                },
+                config,
+            ),
+        }
     }
 
     // organize child directories
