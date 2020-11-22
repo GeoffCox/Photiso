@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use std::{fs, fs::File, io, io::Read, path::Path, path::PathBuf};
+use std::{fs::File, io, io::Read, path::Path, path::PathBuf};
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
@@ -21,15 +21,5 @@ pub fn load_config() -> io::Result<Config> {
     let mut s = String::new();
     file.read_to_string(&mut s)?;
 
-    let config: Config = toml::from_str(&s)?;
-
-    let config = Config {
-        directories: ConfigDirectories {
-            unorganized: fs::canonicalize(&config.directories.unorganized.as_path())?,
-            organized: fs::canonicalize(&config.directories.organized.as_path())?,
-            duplicates: fs::canonicalize(&config.directories.duplicates.as_path())?,
-        },
-    };
-
-    Ok(config)
+    Ok(toml::from_str(&s)?)
 }
