@@ -4,6 +4,5 @@ organized = ".\\test_files\\organized"
 duplicates = ".\\test_files\\duplicates"
 
 [options]
-showProgress = true
-showFileMoves = true
-countResult = false
+#output = "none" | "normal" | "verbose"
+output = "normal"

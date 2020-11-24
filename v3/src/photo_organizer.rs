@@ -5,46 +5,63 @@ use std::{cell::Cell, ffi::OsString, fs, io, path::Path, path::PathBuf};
 #[doc(hidden)]
 pub use anyhow::*;
 
+/// An event raised as photos are organized.
 pub enum PhotisoEvent<'a> {
-    DirStarted {
-        dir: &'a Path,
-    },
-    DirFinished {
-        dir: &'a Path,
-    },
-    FileStarted {
-        file: &'a Path,
-    },
-    FileFinished {
-        file: &'a Path,
-    },
+    /// Raised when processing an unorganized directory starts.
+    DirStarted { dir: &'a Path },
+    /// Raised when processing an unorganized directory finishes.
+    DirFinished { dir: &'a Path },
+    /// Raised when a directory is skipped.
+    DirSkipped { dir: &'a Path, reason: &'a str },
+    /// Raised when processing an unorganized file starts.
+    FileStarted { file: &'a Path },
+    /// Raised when processing an unorganized file finishes.
+    FileFinished { file: &'a Path },
+    /// Raised when file is skipped.
+    FileSkipped { file: &'a Path, reason: &'a str },
+    /// Raised when there is an error processing a file.
     FileError {
         file: &'a Path,
         error: anyhow::Error,
     },
-    FileMoved {
-        from: &'a Path,
-        to: &'a Path,
-    },
-    FileNoOp {
-        file: &'a Path,
-    },
-    DuplicateFileMoved {
-        from: &'a Path,
-        to: &'a Path,
-    },
-    FileSkipped {
-        file: &'a Path,
-        reason: String,
-    },
+    /// Raised when file is moved to its organized location.
+    FileMoved { from: &'a Path, to: &'a Path },
+    /// Raised when file is already at its organized location.
+    FileNoOp { file: &'a Path },
+    /// Raised when duplicate file is moved to its duplicates location.
+    DuplicateFileMoved { from: &'a Path, to: &'a Path },
 }
 
-pub fn organize(
+/// Organizes photos
+///
+/// # Arguments
+///
+/// * `unorganized_dir` - The directory containing the photos that need to be organized.
+/// * `organized_dir` - The directory where organized photos should be placed.
+/// * `duplicates_dir` - The directory where exact duplicate photos should be placed.
+/// * `event_handler` - The handler for listening to events as organize progreses.
+///
+/// To organize photos _in place_, pass the same directory for `unorganized_dir` and `organized_dir`.
+///
+/// The `duplicates_dir` cannot be the same directory as `unorganized_dir` nor `organized_dir`.
+///
+/// If the `event_handler` returns true, organize continues; otherwise organize will stop processing files and return.
+///
+/// # Organization Details
+///
+/// Only files with an extension of bmp, gif, jpg, jpeg, png, tif, tiff, or wmp are processed. Others are skipped.
+///
+/// If a filename contains an exclamation point `!`, it will be skipped.
+///
+pub fn organize<F>(
     unorganized_dir: &Path,
     organized_dir: &Path,
     duplicates_dir: &Path,
-    event_handler: Box<dyn Fn(PhotisoEvent) -> bool>,
-) -> anyhow::Result<()> {
+    event_handler: F,
+) -> anyhow::Result<()>
+where
+    F: Fn(PhotisoEvent) -> bool,
+{
     let organizer = Organizer::new(
         unorganized_dir,
         organized_dir,
@@ -55,25 +72,43 @@ pub fn organize(
     Ok(organizer.organize()?)
 }
 
-#[doc(hidden)]
-pub struct Organizer {
+struct OrganizerParams<F>
+where
+    F: Fn(PhotisoEvent) -> bool,
+{
     unorganized_dir: PathBuf,
     organized_dir: PathBuf,
     duplicates_dir: PathBuf,
-    event_handler: Box<dyn Fn(PhotisoEvent) -> bool>,
+
+    event_handler: F,
+}
+
+#[doc(hidden)]
+struct Organizer<F>
+where
+    F: Fn(PhotisoEvent) -> bool,
+{
+    params: OrganizerParams<F>,
+
+    unorganized_dir: PathBuf,
+    organized_dir: PathBuf,
+    duplicates_dir: PathBuf,
+
     canceled: Cell<bool>,
 }
 
 #[doc(hidden)]
-impl Organizer {
+impl<F> Organizer<F>
+where
+    F: Fn(PhotisoEvent) -> bool,
+{
     /// Create a new instance of the organizer
-    #[doc(hidden)]
     pub fn new(
         unorganized_dir: &Path,
         organized_dir: &Path,
         duplicates_dir: &Path,
-        event_handler: Box<dyn Fn(PhotisoEvent) -> bool>,
-    ) -> anyhow::Result<Organizer> {
+        event_handler: F,
+    ) -> anyhow::Result<Organizer<F>> {
         let canonical_unorganized_dir = fs::canonicalize(unorganized_dir)?;
         let canonical_organized_dir = fs::canonicalize(organized_dir)?;
         let canonical_duplicates_dir = fs::canonicalize(duplicates_dir)?;
@@ -88,40 +123,37 @@ impl Organizer {
         );
 
         Ok(Organizer {
+            params: OrganizerParams {
+                unorganized_dir: unorganized_dir.to_path_buf(),
+                organized_dir: organized_dir.to_path_buf(),
+                duplicates_dir: duplicates_dir.to_path_buf(),
+                event_handler,
+            },
             unorganized_dir: canonical_unorganized_dir,
             organized_dir: canonical_organized_dir,
             duplicates_dir: canonical_duplicates_dir,
-            event_handler,
             canceled: Cell::new(false),
         })
     }
 
-    /// Organized the unorganized directory of photos, placing them into the organized directory.
+    /// Organize the unorganized directory of photos, placing photos to their organized location.
     /// Any duplicate photos are moved to the duplicates directory.
-    #[doc(hidden)]
     pub fn organize(&self) -> anyhow::Result<()> {
         self.canceled.set(false);
         self.organize_directory(&self.unorganized_dir)?;
         Ok(())
     }
 
-    #[doc(hidden)]
-    fn on_event(&self, event: PhotisoEvent) {
-        if !(self.event_handler)(event) {
-            self.canceled.set(true);
-        }
-    }
-
-    #[doc(hidden)]
-    fn organize_directory(&self, dir_path: &Path) -> anyhow::Result<()> {
+    fn organize_directory(&self, dir: &Path) -> anyhow::Result<()> {
         // do not process the duplicates directory
-        if dir_path == self.duplicates_dir {
+        if dir == self.duplicates_dir {
+            self.raise_dir_skipped(dir, "Directory is the duplicates directory.");
             return Ok(());
         }
 
-        self.on_event(PhotisoEvent::DirStarted { dir: dir_path });
+        self.raise_dir_started(dir);
 
-        let mut entries = fs::read_dir(&dir_path)?
+        let mut entries = fs::read_dir(dir)?
             .map(|res| res.map(|e| e.path()))
             .collect::<Result<Vec<_>, io::Error>>()?;
         entries.sort();
@@ -130,10 +162,7 @@ impl Organizer {
         for e in entries.iter().filter(|e| e.is_file()) {
             match self.organize_file(&e) {
                 Ok(_) => {}
-                Err(err) => self.on_event(PhotisoEvent::FileError {
-                    file: &e,
-                    error: err,
-                }),
+                Err(err) => self.raise_file_error(&e, err),
             }
         }
 
@@ -142,14 +171,13 @@ impl Organizer {
             self.organize_directory(&e)?;
         }
 
-        self.on_event(PhotisoEvent::DirFinished { dir: dir_path });
+        self.raise_dir_finished(dir);
 
         Ok(())
     }
 
-    #[doc(hidden)]
     fn organize_file(&self, file_path: &Path) -> anyhow::Result<()> {
-        self.on_event(PhotisoEvent::FileStarted { file: file_path });
+        self.raise_file_started(file_path);
 
         if self.canceled.get() {
             return Ok(());
@@ -157,10 +185,7 @@ impl Organizer {
 
         // only handle files with photo extensions
         if !is_photo_file(file_path) {
-            self.on_event(PhotisoEvent::FileSkipped {
-                file: file_path,
-                reason: String::from("Not a photo."),
-            });
+            self.raise_file_skipped(file_path, "File does not a photo extension.");
             return Ok(());
         }
 
@@ -172,10 +197,7 @@ impl Organizer {
             .unwrap()
             .contains("!")
         {
-            self.on_event(PhotisoEvent::FileSkipped {
-                file: file_path,
-                reason: String::from("Photo file name contains '!'."),
-            });
+            self.raise_file_skipped(file_path, "File name contains '!'.");
             return Ok(());
         }
 
@@ -189,7 +211,7 @@ impl Organizer {
                 return Ok(());
             }
 
-            let dest_path = get_photo_destination_path(
+            let dest_path = get_organized_photo_path(
                 file_path,
                 &photo_date_time,
                 conflict,
@@ -198,7 +220,7 @@ impl Organizer {
 
             // if the file is already in the right place, do nothing
             if file_path.to_str() == dest_path.to_str() {
-                self.on_event(PhotisoEvent::FileNoOp { file: file_path });
+                self.raise_file_noop(file_path);
 
                 if self.canceled.get() {
                     return Ok(());
@@ -223,20 +245,16 @@ impl Organizer {
             } else {
                 // move the file to the destination
                 move_file(file_path, dest_path.as_ref())?;
-                self.on_event(PhotisoEvent::FileMoved {
-                    from: file_path,
-                    to: &dest_path,
-                });
+                self.raise_file_moved(file_path, &dest_path);
                 break;
             }
         }
 
-        self.on_event(PhotisoEvent::FileFinished { file: file_path });
+        self.raise_file_finished(file_path);
 
         Ok(())
     }
 
-    #[doc(hidden)]
     fn organize_duplicate(
         &self,
         file_path: &Path,
@@ -250,7 +268,7 @@ impl Organizer {
                 return Ok(());
             }
 
-            let dest_path = get_photo_duplicates_path(
+            let dest_path = get_duplicate_photo_path(
                 file_path,
                 date_time,
                 hash,
@@ -260,7 +278,7 @@ impl Organizer {
 
             // if the duplicate is already in the right place, do nothing
             if file_path.to_str() == dest_path.to_str() {
-                self.on_event(PhotisoEvent::FileNoOp { file: file_path });
+                self.raise_file_noop(file_path);
                 break;
             }
 
@@ -271,18 +289,89 @@ impl Organizer {
             }
 
             // move the duplicate to the destination
-            move_file(file_path, dest_path.as_ref())?;
-            self.on_event(PhotisoEvent::DuplicateFileMoved {
-                from: file_path,
-                to: &dest_path,
-            });
+            move_file(file_path, &dest_path)?;
+            self.raise_duplicate_moved(file_path, &dest_path);
             break;
         }
 
         Ok(())
     }
+
+    // -------------------- Events --------------------//
+
+    fn raise_dir_started(&self, dir: &Path) {
+        self.on_event(PhotisoEvent::DirStarted {
+            dir: &decry_path(dir, &self.unorganized_dir, &self.params.unorganized_dir),
+        });
+    }
+
+    fn raise_dir_finished(&self, dir: &Path) {
+        self.on_event(PhotisoEvent::DirFinished {
+            dir: &decry_path(dir, &self.unorganized_dir, &self.params.unorganized_dir),
+        });
+    }
+
+    fn raise_dir_skipped(&self, dir: &Path, reason: &str) {
+        self.on_event(PhotisoEvent::DirSkipped {
+            dir: &decry_path(dir, &self.unorganized_dir, &self.params.unorganized_dir),
+            reason,
+        });
+    }
+
+    fn raise_file_started(&self, file: &Path) {
+        self.on_event(PhotisoEvent::FileStarted {
+            file: &decry_path(file, &self.unorganized_dir, &self.params.unorganized_dir),
+        });
+    }
+
+    fn raise_file_finished(&self, file: &Path) {
+        self.on_event(PhotisoEvent::FileFinished {
+            file: &decry_path(file, &self.unorganized_dir, &self.params.unorganized_dir),
+        });
+    }
+
+    fn raise_file_moved(&self, from: &Path, to: &Path) {
+        self.on_event(PhotisoEvent::FileMoved {
+            from: &decry_path(from, &self.unorganized_dir, &self.params.unorganized_dir),
+            to: &decry_path(to, &self.organized_dir, &self.params.organized_dir),
+        });
+    }
+
+    fn raise_file_noop(&self, file: &Path) {
+        self.on_event(PhotisoEvent::FileNoOp {
+            file: &decry_path(file, &self.unorganized_dir, &self.params.unorganized_dir),
+        });
+    }
+
+    fn raise_duplicate_moved(&self, from: &Path, to: &Path) {
+        self.on_event(PhotisoEvent::DuplicateFileMoved {
+            from: &decry_path(from, &self.unorganized_dir, &self.params.unorganized_dir),
+            to: &decry_path(to, &self.duplicates_dir, &self.params.duplicates_dir),
+        });
+    }
+
+    fn raise_file_skipped(&self, file: &Path, reason: &str) {
+        self.on_event(PhotisoEvent::FileSkipped {
+            file: &decry_path(file, &self.unorganized_dir, &self.params.unorganized_dir),
+            reason,
+        });
+    }
+
+    fn raise_file_error(&self, file: &Path, error: anyhow::Error) {
+        self.on_event(PhotisoEvent::FileError {
+            file: &decry_path(file, &self.unorganized_dir, &self.params.unorganized_dir),
+            error,
+        });
+    }
+
+    fn on_event(&self, event: PhotisoEvent) {
+        if !(self.params.event_handler)(event) {
+            self.canceled.set(true);
+        }
+    }
 }
 
+/// Determines if a file is a photo by inspecting the extension
 #[doc(hidden)]
 fn is_photo_file(path: &Path) -> bool {
     if path.exists() && path.is_file() {
@@ -307,7 +396,7 @@ fn is_photo_file(path: &Path) -> bool {
 }
 
 #[doc(hidden)]
-fn get_photo_destination_path(
+fn get_organized_photo_path(
     file_path: &Path,
     date_time: &chrono::DateTime<Utc>,
     conflict: u32,
@@ -346,7 +435,7 @@ fn get_photo_destination_path(
 }
 
 #[doc(hidden)]
-fn get_photo_duplicates_path(
+fn get_duplicate_photo_path(
     file_path: &Path,
     date_time: &chrono::DateTime<Utc>,
     hash: &str,
@@ -384,7 +473,7 @@ fn get_photo_duplicates_path(
     return Ok(dest_path);
 }
 
-// returns the file hash if both files has the same length and hash values
+/// Returns true if the files are the same length and the file hases are equal
 #[doc(hidden)]
 fn are_same_file_contents(x: &Path, y: &Path) -> anyhow::Result<Option<String>> {
     let x_len = fs::metadata(x)?.len();
@@ -406,9 +495,20 @@ fn are_same_file_contents(x: &Path, y: &Path) -> anyhow::Result<Option<String>> 
 
 #[doc(hidden)]
 fn move_file(from: &Path, to: &Path) -> io::Result<()> {
-    let from_dir = to.parent().unwrap();
-    fs::create_dir_all(from_dir)?;
+    if let Some(to_dir) = to.parent() {
+        fs::create_dir_all(to_dir)?;
+    }
+
     fs::rename(from, to)?;
 
     Ok(())
+}
+
+/// The reverse of fs::canonicalize.  Returns the path with the lay base instead of the the cannonical base.
+#[doc(hidden)]
+fn decry_path(canonical_path: &Path, canonical_base: &Path, lay_base: &Path) -> PathBuf {
+    match canonical_path.strip_prefix(canonical_base) {
+        Ok(partial) => lay_base.join(partial),
+        _ => canonical_path.to_path_buf(),
+    }
 }

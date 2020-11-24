@@ -2,15 +2,21 @@ use serde::Deserialize;
 use std::{fs::File, io, io::Read, path::Path, path::PathBuf};
 
 #[derive(Deserialize, Debug)]
-pub struct Config {
-    pub directories: ConfigDirectories,
-}
-
-#[derive(Deserialize, Debug)]
 pub struct ConfigDirectories {
     pub unorganized: PathBuf,
     pub organized: PathBuf,
     pub duplicates: PathBuf,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct ConfigOptions {
+    pub output: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Config {
+    pub directories: ConfigDirectories,
+    pub options: ConfigOptions,
 }
 
 pub fn load_config() -> io::Result<Config> {
