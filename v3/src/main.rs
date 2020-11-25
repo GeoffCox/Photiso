@@ -5,51 +5,20 @@ mod photo_organizer;
 
 use crate::config::*;
 use crate::photo_organizer::*;
-use std::path::Path;
 
 fn main() -> anyhow::Result<()> {
-    let canonical_path = Path::new(
-        "\\\\?\\C:\\GitHub\\Photiso\\v3\\test_files\\unorganized\\foo\\bar\\baz\\NotAPhoto.txt",
-    );
-    let canonical_base = Path::new("\\\\?\\C:\\GitHub\\Photiso\\v3\\test_files\\unorganized");
-    let lay_base = Path::new(".\\unorganized");
-
-    let target = canonical_path.to_str().unwrap();
-    let remove = canonical_base.to_str().unwrap();
-
-    let lay_path = target.strip_prefix(remove).unwrap();
-    println!("lay_path {:?}", lay_path);
-
-    let lay_result = lay_base.join(lay_path);
-    println!("lay_result {:?}", lay_result);
-
-    let path_stripped = canonical_path.strip_prefix(canonical_base).unwrap();
-    println!("path_stripped {:?}", path_stripped);
-
-    println!("----------------------------------------");
-    println!("Photiso");
-
     let config: Config = load_config()?;
 
-    println!(
-        "unorganized directory: {:?}",
-        config.directories.unorganized
-    );
-    println!("organized directory: {:?}", config.directories.organized);
-    println!("duplicates directory: {:?}", config.directories.duplicates);
+    print_header(&config);
 
-    println!("----------------------------------------");
+    fn create_on_photiso_event(config: Config) -> Box<dyn Fn(PhotisoEvent) -> bool> {
+        Box::new(move |event| -> bool {
+            on_photiso_event(&config, &event);
+            true
+        })
+    }
 
-    let on_event = create_on_photiso_event(Config {
-        directories: ConfigDirectories {
-            unorganized: config.directories.unorganized.clone(),
-            organized: config.directories.organized.clone(),
-            duplicates: config.directories.duplicates.clone(),
-        },
-        options: ConfigOptions {
-            output: String::from("normal"),
-        },
-    });
+    let on_event = create_on_photiso_event(config.clone());
 
     photo_organizer::organize(
         &config.directories.unorganized,
@@ -58,81 +27,117 @@ fn main() -> anyhow::Result<()> {
         on_event,
     )?;
 
-    println!("----------------------------------------");
+    print_footer(&config);
 
     Ok(())
 }
 
-fn create_on_photiso_event(config: Config) -> Box<dyn Fn(PhotisoEvent) -> bool> {
-    Box::new(move |event| -> bool {
-        on_photiso_event(&config, event);
-        true
-    })
+fn print_header(config: &Config) {
+    if config.options.output != "none" {
+        println!("========================================");
+        println!("Photiso");
+        println!("========================================");
+        println!();
+        println!("Configuration");
+        println!("=============");
+        println!();
+        println!("unorganized: {:?}", config.directories.unorganized);
+        println!("organized: {:?}", config.directories.organized);
+        println!("duplicates: {:?}", config.directories.duplicates);
+        println!();
+        println!("stop on error: {:?}", config.options.stop_on_error);
+        println!();
+        if config.options.output == "compact" {
+            println!("Progress Legend");
+            println!("======");
+            println!(". => a photo was moved to the organized directory.");
+            println!("_ => no change (photo is alrady in the correct location).");
+            println!("D => a duplicate photo was moved to the duplicates directory.");
+            println!("S => a file was skipped.");
+            println!("E => there was a problem processing a file.");
+            println!();
+        }
+        println!("========================================");
+        if config.options.output == "compact" {
+            println!();
+            print!("Progress: ")
+        }
+    }
 }
 
-fn try_trim_prefix<P>(path: &Path, _base: P) -> &Path
-where
-    P: AsRef<Path>,
-{
-    path
-    // match path.strip_prefix(base) {
-    //     Ok(new_path) => new_path.as_ref(),
-    //     Err(e) => {
-    //         println!("trim_prefix error. {:?}", e.to_string());
-    //         return path.as_ref();
-    //     }
-    // }
+fn print_footer(config: &Config) {
+    if config.options.output != "none" {
+        println!();
+        println!();
+        println!("========================================");
+    }
 }
 
-fn on_photiso_event(config: &Config, event: PhotisoEvent) {
+fn on_photiso_event(config: &Config, event: &PhotisoEvent) -> bool {
+    match config.options.output.as_str() {
+        "none" => on_photiso_event_none(event),
+        "compact" => on_photiso_event_compact(event),
+        _ => on_photiso_event_default(event),
+    }
+
+    if let PhotisoEvent::FileError { file: _, error: _ } = event {
+        if config.options.stop_on_error {
+            return false;
+        }
+    }
+    true
+}
+
+fn on_photiso_event_none(event: &PhotisoEvent) {
     match event {
-        PhotisoEvent::DirStarted { dir } => {
-            let trim_dir = try_trim_prefix(dir, &config.directories.unorganized);
-            println!("Dir: {:?}", trim_dir);
+        _ => {}
+    }
+}
+
+fn on_photiso_event_compact(event: &PhotisoEvent) {
+    match event {
+        PhotisoEvent::FileMoved { from: _, to: _ } => {
+            print!(".");
         }
-        PhotisoEvent::FileStarted { file } => {
-            let trim_file = try_trim_prefix(file, &config.directories.unorganized);
-            println!("  File: {:?}", trim_file);
+        PhotisoEvent::DuplicateFileMoved { from: _, to: _ } => {
+            print!("D");
         }
-        PhotisoEvent::FileMoved { from, to } => {
-            let trim_from = try_trim_prefix(from, &config.directories.unorganized);
-            let trim_to = try_trim_prefix(to, &config.directories.organized);
-            println!("    Moved: {:?} -> {:?}", trim_from, trim_to);
+        PhotisoEvent::FileNoOp { file: _ } => {
+            print!("_");
         }
-        PhotisoEvent::DuplicateFileMoved { from, to } => {
-            let trim_from = try_trim_prefix(from, &config.directories.unorganized);
-            let trim_to = try_trim_prefix(to, &config.directories.duplicates);
-            println!("    Moved: {:?} -> {:?}", trim_from, trim_to);
+        PhotisoEvent::FileSkipped { file: _, reason: _ } => {
+            print!("S");
         }
-        PhotisoEvent::FileNoOp { file } => {
-            let trim_file = try_trim_prefix(file, &config.directories.unorganized);
-            println!("    No-op: {:?}", trim_file);
-        }
-        PhotisoEvent::FileSkipped { file, reason } => {
-            let trim_file = try_trim_prefix(file, &config.directories.unorganized);
-            println!("    Skipped - {}: {:?}", reason, trim_file);
+        PhotisoEvent::FileError { file: _, error: _ } => {
+            print!("E");
         }
 
         _ => {}
     }
 }
 
-fn on_photiso_event_2(config: &Config, event: PhotisoEvent) {
+fn on_photiso_event_default(event: &PhotisoEvent) {
     match event {
+        PhotisoEvent::DirStarted { dir } => {
+            println!("{:?}", dir);
+        }
+        PhotisoEvent::DirFinished { dir: _ } => {
+            println!();
+        }
         PhotisoEvent::FileMoved { from, to } => {
-            print!(".");
+            println!("  Photo moved: {:?} -> {:?}", from, to);
         }
         PhotisoEvent::DuplicateFileMoved { from, to } => {
-            print!("D");
+            println!("  Duplicate photo moved: {:?} -> {:?}", from, to);
         }
         PhotisoEvent::FileNoOp { file } => {
-            print!("-");
+            println!("  Already correct: {:?}", file);
         }
         PhotisoEvent::FileSkipped { file, reason } => {
-            print!("S");
+            println!("  File skipped: {:?} -> {}", file, reason);
         }
         PhotisoEvent::FileError { file, error } => {
-            print!("E");
+            println!("  File error: {:?} -> {:?}", file, error);
         }
 
         _ => {}

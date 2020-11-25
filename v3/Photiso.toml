@@ -1,8 +1,9 @@
 [directories]
-unorganized = ".\\test_files\\unorganized"
+unorganized = ".\\test_files\\organized"
 organized = ".\\test_files\\organized"
 duplicates = ".\\test_files\\duplicates"
 
 [options]
-#output = "none" | "normal" | "verbose"
-output = "normal"
+#output = "none" | "compact" | "default"
+output = "compact"
+stopOnError = true
