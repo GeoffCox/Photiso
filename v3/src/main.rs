@@ -11,25 +11,25 @@ fn main() -> anyhow::Result<()> {
 
     print_header(&config);
 
-    fn create_on_photiso_event(config: Config) -> Box<dyn Fn(PhotisoEvent) -> bool> {
-        Box::new(move |event| -> bool {
-            on_photiso_event(&config, &event);
-            true
-        })
-    }
-
     let on_event = create_on_photiso_event(config.clone());
 
-    photo_organizer::organize(
+    let result = photo_organizer::organize(
         &config.directories.unorganized,
         &config.directories.organized,
         &config.directories.duplicates,
         on_event,
     )?;
 
-    print_footer(&config);
+    print_footer(&config, &result);
 
     Ok(())
+}
+
+fn create_on_photiso_event(config: Config) -> Box<dyn Fn(OrganizeEvent) -> bool> {
+    Box::new(move |event| -> bool {
+        on_photiso_event(&config, &event);
+        true
+    })
 }
 
 fn print_header(config: &Config) {
@@ -52,9 +52,9 @@ fn print_header(config: &Config) {
             println!("======");
             println!(". => a photo was moved to the organized directory.");
             println!("_ => no change (photo is alrady in the correct location).");
-            println!("D => a duplicate photo was moved to the duplicates directory.");
-            println!("S => a file was skipped.");
-            println!("E => there was a problem processing a file.");
+            println!("* => a duplicate photo was moved to the duplicates directory.");
+            println!("^ => a file was skipped.");
+            println!("! => there was a problem processing a file.");
             println!();
         }
         println!("========================================");
@@ -65,22 +65,34 @@ fn print_header(config: &Config) {
     }
 }
 
-fn print_footer(config: &Config) {
+fn print_footer(config: &Config, result: &OrganizeResult) {
     if config.options.output != "none" {
         println!();
+        println!();
+        println!("========================================");
+        println!();
+        println!("Directories: {}", result.dirs);
+        println!("Directories Skipped: {}", result.dirs_skipped);
+        println!();
+        println!("Files: {}", result.files);
+        println!("Moved: {}", result.photos_moved);
+        println!("Duplicates: {}", result.duplicate_photos_moved);
+        println!("Skipped: {}", result.files_skipped);
+        println!("Already correct: {}", result.photos_noop);
+        println!("Errors: {}", result.files_errored);
         println!();
         println!("========================================");
     }
 }
 
-fn on_photiso_event(config: &Config, event: &PhotisoEvent) -> bool {
+fn on_photiso_event(config: &Config, event: &OrganizeEvent) -> bool {
     match config.options.output.as_str() {
         "none" => on_photiso_event_none(event),
         "compact" => on_photiso_event_compact(event),
         _ => on_photiso_event_default(event),
     }
 
-    if let PhotisoEvent::FileError { file: _, error: _ } = event {
+    if let OrganizeEvent::FileError { file: _, error: _ } = event {
         if config.options.stop_on_error {
             return false;
         }
@@ -88,55 +100,55 @@ fn on_photiso_event(config: &Config, event: &PhotisoEvent) -> bool {
     true
 }
 
-fn on_photiso_event_none(event: &PhotisoEvent) {
+fn on_photiso_event_none(event: &OrganizeEvent) {
     match event {
         _ => {}
     }
 }
 
-fn on_photiso_event_compact(event: &PhotisoEvent) {
+fn on_photiso_event_compact(event: &OrganizeEvent) {
     match event {
-        PhotisoEvent::FileMoved { from: _, to: _ } => {
+        OrganizeEvent::PhotoMoved { from: _, to: _ } => {
             print!(".");
         }
-        PhotisoEvent::DuplicateFileMoved { from: _, to: _ } => {
-            print!("D");
+        OrganizeEvent::DuplicatePhotoMoved { from: _, to: _ } => {
+            print!("*");
         }
-        PhotisoEvent::FileNoOp { file: _ } => {
+        OrganizeEvent::PhotoNoOp { file: _ } => {
             print!("_");
         }
-        PhotisoEvent::FileSkipped { file: _, reason: _ } => {
-            print!("S");
+        OrganizeEvent::FileSkipped { file: _, reason: _ } => {
+            print!("^");
         }
-        PhotisoEvent::FileError { file: _, error: _ } => {
-            print!("E");
+        OrganizeEvent::FileError { file: _, error: _ } => {
+            print!("!");
         }
 
         _ => {}
     }
 }
 
-fn on_photiso_event_default(event: &PhotisoEvent) {
+fn on_photiso_event_default(event: &OrganizeEvent) {
     match event {
-        PhotisoEvent::DirStarted { dir } => {
+        OrganizeEvent::DirStarted { dir } => {
             println!("{:?}", dir);
         }
-        PhotisoEvent::DirFinished { dir: _ } => {
+        OrganizeEvent::DirFinished { dir: _ } => {
             println!();
         }
-        PhotisoEvent::FileMoved { from, to } => {
+        OrganizeEvent::PhotoMoved { from, to } => {
             println!("  Photo moved: {:?} -> {:?}", from, to);
         }
-        PhotisoEvent::DuplicateFileMoved { from, to } => {
+        OrganizeEvent::DuplicatePhotoMoved { from, to } => {
             println!("  Duplicate photo moved: {:?} -> {:?}", from, to);
         }
-        PhotisoEvent::FileNoOp { file } => {
+        OrganizeEvent::PhotoNoOp { file } => {
             println!("  Already correct: {:?}", file);
         }
-        PhotisoEvent::FileSkipped { file, reason } => {
+        OrganizeEvent::FileSkipped { file, reason } => {
             println!("  File skipped: {:?} -> {}", file, reason);
         }
-        PhotisoEvent::FileError { file, error } => {
+        OrganizeEvent::FileError { file, error } => {
             println!("  File error: {:?} -> {:?}", file, error);
         }
 
