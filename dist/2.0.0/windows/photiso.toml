@@ -1,0 +1,9 @@
+[directories]
+unorganized = ".\\unorganized"
+organized = ".\\organized"
+duplicates = ".\\duplicates"
+
+[options]
+#output = "none" | "compact" | "default"
+output = "compact"
+stopOnError = true
