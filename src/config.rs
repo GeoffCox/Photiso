@@ -24,7 +24,7 @@ pub struct Config {
 }
 
 pub fn load_config() -> io::Result<Config> {
-    let path = Path::new("./Photiso.toml");
+    let path = Path::new("./photiso.toml");
 
     let mut file = File::open(&path)?;
 

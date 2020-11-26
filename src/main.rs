@@ -81,6 +81,15 @@ fn print_footer(config: &Config, result: &OrganizeResult) {
         println!("Already correct: {}", result.photos_noop);
         println!("Errors: {}", result.files_errored);
         println!();
+        println!("Duration: {:?}", result.duration);
+
+        let duration = result.duration.as_secs_f64();
+        if duration > 0.0 {
+            println!("Files/Sec: {:?}", result.files as f64 / duration);
+        } else {
+            println!("Files/Sec: (unmeasurable)");
+        }
+        println!();
         println!("========================================");
     }
 }

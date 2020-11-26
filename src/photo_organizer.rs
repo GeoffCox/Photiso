@@ -1,6 +1,13 @@
 use crate::file_hash::*;
 use crate::photo_date_time::*;
-use std::{cell::Cell, ffi::OsString, fs, io, path::Path, path::PathBuf};
+use std::{
+    cell::Cell,
+    ffi::OsString,
+    fs, io,
+    path::Path,
+    path::PathBuf,
+    time::{Duration, Instant},
+};
 
 #[doc(hidden)]
 pub use anyhow::*;
@@ -42,32 +49,7 @@ pub struct OrganizeResult {
     pub photos_moved: u64,
     pub duplicate_photos_moved: u64,
     pub photos_noop: u64,
-}
-
-struct OrganizeCounters {
-    dirs: Cell<u64>,
-    dirs_skipped: Cell<u64>,
-    files: Cell<u64>,
-    files_skipped: Cell<u64>,
-    files_errored: Cell<u64>,
-    photos_moved: Cell<u64>,
-    duplicate_photos_moved: Cell<u64>,
-    photos_noop: Cell<u64>,
-}
-
-impl OrganizeCounters {
-    fn to_result(&self) -> OrganizeResult {
-        OrganizeResult {
-            dirs: self.dirs.get(),
-            dirs_skipped: self.dirs_skipped.get(),
-            files: self.files.get(),
-            photos_moved: self.photos_moved.get(),
-            duplicate_photos_moved: self.duplicate_photos_moved.get(),
-            photos_noop: self.photos_noop.get(),
-            files_skipped: self.files_skipped.get(),
-            files_errored: self.files_errored.get(),
-        }
-    }
+    pub duration: Duration,
 }
 
 /// Organizes photos
@@ -100,6 +82,19 @@ pub fn organize<F>(
 where
     F: Fn(OrganizeEvent) -> bool,
 {
+    // each of the directories must exist, otherwise canonicalize will fail.
+    if !unorganized_dir.exists() {
+        fs::create_dir_all(&unorganized_dir)?;
+    }
+
+    if !organized_dir.exists() {
+        fs::create_dir_all(&organized_dir)?;
+    }
+
+    if !&duplicates_dir.exists() {
+        fs::create_dir_all(&duplicates_dir)?;
+    }
+
     let organizer = Organizer::new(
         unorganized_dir,
         organized_dir,
@@ -121,6 +116,17 @@ where
     event_handler: F,
 }
 
+struct OrganizeCounters {
+    dirs: Cell<u64>,
+    dirs_skipped: Cell<u64>,
+    files: Cell<u64>,
+    files_skipped: Cell<u64>,
+    files_errored: Cell<u64>,
+    photos_moved: Cell<u64>,
+    duplicate_photos_moved: Cell<u64>,
+    photos_noop: Cell<u64>,
+}
+
 #[doc(hidden)]
 struct Organizer<F>
 where
@@ -133,7 +139,6 @@ where
     duplicates_dir: PathBuf,
 
     counters: OrganizeCounters,
-
     canceled: Cell<bool>,
 }
 
@@ -190,8 +195,22 @@ where
     /// Any duplicate photos are moved to the duplicates directory.
     pub fn organize(&self) -> anyhow::Result<OrganizeResult> {
         self.canceled.set(false);
+
+        let timer = Instant::now();
         self.organize_directory((&self).unorganized_dir.as_ref())?;
-        Ok(self.counters.to_result())
+        let duration = timer.elapsed();
+
+        Ok(OrganizeResult {
+            dirs: self.counters.dirs.get(),
+            dirs_skipped: self.counters.dirs_skipped.get(),
+            files: self.counters.files.get(),
+            photos_moved: self.counters.photos_moved.get(),
+            duplicate_photos_moved: self.counters.duplicate_photos_moved.get(),
+            photos_noop: self.counters.photos_noop.get(),
+            files_skipped: self.counters.files_skipped.get(),
+            files_errored: self.counters.files_errored.get(),
+            duration,
+        })
     }
 
     fn organize_directory(&self, dir: &Path) -> anyhow::Result<()> {
