@@ -110,7 +110,74 @@ fn convert_system_time_to_chrono_date_time(
 // -------------------- EXIF -> chrono::DateTime conversion -------------------- //
 
 #[doc(hidden)]
+fn days_in_month(year: i32, month: u32) -> i64 {
+    if month == 12 {
+        chrono::NaiveDate::from_ymd(year + 1, 1, 1)
+    } else {
+        chrono::NaiveDate::from_ymd(year, month + 1, 1)
+    }
+    .signed_duration_since(chrono::NaiveDate::from_ymd(year, month, 1))
+    .num_days()
+}
+
+// Unfortunately, exif::DateTime can have components beyond the bounds of a valid date and time
+// (e.g. 400 minutes, 80 seconds, etc.)
+#[doc(hidden)]
+fn ensure_valid_exif_date_time(exif_date_time: &exif::DateTime) -> exif::DateTime {
+    let mut year = exif_date_time.year;
+    let mut month = exif_date_time.month;
+    let mut day = exif_date_time.day;
+    let mut hour = exif_date_time.hour;
+    let mut minute = exif_date_time.minute;
+    let mut second = exif_date_time.second;
+    let mut nanosecond = exif_date_time.nanosecond;
+
+    if let Some(nano) = exif_date_time.nanosecond {
+        second += (nano / 1000000000) as u8;
+        nanosecond = Some(nano % 1000000000);
+    }
+
+    minute += second / 60;
+    second = second % 60;
+
+    hour += minute / 60;
+    minute = minute % 60;
+
+    day += hour / 24;
+    hour = hour % 24;
+
+    let mut cur_days_in_month = days_in_month(year as i32, month as u32) as u8;
+    while day > cur_days_in_month {
+        day -= cur_days_in_month;
+        month += 1;
+
+        if month > 12 {
+            month = 1;
+            year += 1;
+        }
+
+        cur_days_in_month = days_in_month(year as i32, month as u32) as u8;
+    }
+
+    year += (month / 12) as u16;
+    month = month % 12;
+
+    return exif::DateTime {
+        year,
+        month,
+        day,
+        hour,
+        minute,
+        second,
+        nanosecond,
+        offset: exif_date_time.offset,
+    };
+}
+
+#[doc(hidden)]
 fn convert_exif_to_chrono_date_time(exif_date_time: &exif::DateTime) -> chrono::DateTime<Utc> {
+    let exif_date_time = ensure_valid_exif_date_time(exif_date_time);
+
     let date = Utc.ymd(
         exif_date_time.year as i32,
         exif_date_time.month as u32,
