@@ -159,8 +159,8 @@ fn ensure_valid_exif_date_time(exif_date_time: &exif::DateTime) -> exif::DateTim
         cur_days_in_month = days_in_month(year as i32, month as u32) as u8;
     }
 
-    year += (month / 12) as u16;
-    month = month % 12;
+    year += (month / 13) as u16;
+    month = month % 13;
 
     return exif::DateTime {
         year,

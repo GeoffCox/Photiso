@@ -8,7 +8,7 @@
             "name": "(Windows) Launch",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/target/debug/photiso_rust.exe",
+            "program": "${workspaceFolder}/target/debug/photiso.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
