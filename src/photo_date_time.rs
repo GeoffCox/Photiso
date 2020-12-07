@@ -174,10 +174,18 @@ fn ensure_valid_exif_date_time(exif_date_time: &exif::DateTime) -> exif::DateTim
     };
 }
 
+// Tests if the date/time are greater than 0
+#[doc(hidden)]
+fn is_positive_exif_date_time(exif_date_time: &exif::DateTime) -> bool {    
+    // year, month, and day are 1 based
+    // hour, minute, second, and nanosecond cannot be negative
+    exif_date_time.year > 0
+        && exif_date_time.month > 0
+        && exif_date_time.day > 0
+}
+
 #[doc(hidden)]
 fn convert_exif_to_chrono_date_time(exif_date_time: &exif::DateTime) -> chrono::DateTime<Utc> {
-    let exif_date_time = ensure_valid_exif_date_time(exif_date_time);
-
     let date = Utc.ymd(
         exif_date_time.year as i32,
         exif_date_time.month as u32,
@@ -202,7 +210,10 @@ fn convert_exif_value_to_date_time(value: &exif::Value) -> Option<exif::DateTime
     if let exif::Value::Ascii(lines) = value {
         if lines.len() > 0 {
             if let Ok(date_time) = exif::DateTime::from_ascii(&lines[0]) {
-                return Some(date_time);
+                if is_positive_exif_date_time(&date_time) {
+                    let date_time = ensure_valid_exif_date_time(&date_time);
+                    return Some(date_time);
+                }
             }
         }
     }

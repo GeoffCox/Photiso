@@ -36,10 +36,7 @@ fn print_header(config: &Config) {
     if config.options.output != "none" {
         println!("========================================");
         println!("Photiso");
-        println!("========================================");
-        println!();
-        println!("Configuration");
-        println!("=============");
+        println!("========================================");                
         println!();
         println!("unorganized: {:?}", config.directories.unorganized);
         println!("organized: {:?}", config.directories.organized);
@@ -51,7 +48,7 @@ fn print_header(config: &Config) {
             println!("Progress Legend");
             println!("======");
             println!(". => a photo was moved to the organized directory.");
-            println!("_ => no change (photo is alrady in the correct location).");
+            println!("_ => no change (photo is already in the correct location).");
             println!("* => a duplicate photo was moved to the duplicates directory.");
             println!("^ => a file was skipped.");
             println!("! => there was a problem processing a file.");
@@ -59,8 +56,8 @@ fn print_header(config: &Config) {
         }
         println!("========================================");
         if config.options.output == "compact" {
-            println!();
-            print!("Progress: ")
+            eprintln!();
+            eprint!("Progress: ")
         }
     }
 }
@@ -89,6 +86,7 @@ fn print_footer(config: &Config, result: &OrganizeResult) {
         } else {
             println!("Files/Sec: (unmeasurable)");
         }
+        eprintln!();
         println!();
         println!("========================================");
     }
@@ -97,6 +95,7 @@ fn print_footer(config: &Config, result: &OrganizeResult) {
 fn on_photiso_event(config: &Config, event: &OrganizeEvent) -> bool {
     match config.options.output.as_str() {
         "none" => on_photiso_event_none(event),
+        "summary" => on_photiso_event_none(event),
         "compact" => on_photiso_event_compact(event),
         _ => on_photiso_event_default(event),
     }
@@ -118,19 +117,19 @@ fn on_photiso_event_none(event: &OrganizeEvent) {
 fn on_photiso_event_compact(event: &OrganizeEvent) {
     match event {
         OrganizeEvent::PhotoMoved { from: _, to: _ } => {
-            print!(".");
+            eprint!(".");
         }
         OrganizeEvent::DuplicatePhotoMoved { from: _, to: _ } => {
-            print!("*");
+            eprint!("*");
         }
         OrganizeEvent::PhotoNoOp { file: _ } => {
-            print!("_");
+            eprint!("_");
         }
         OrganizeEvent::FileSkipped { file: _, reason: _ } => {
-            print!("^");
+            eprint!("^");
         }
         OrganizeEvent::FileError { file: _, error: _ } => {
-            print!("!");
+            eprint!("!");
         }
 
         _ => {}
