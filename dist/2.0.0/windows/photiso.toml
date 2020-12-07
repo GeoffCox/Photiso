@@ -4,6 +4,6 @@ organized = ".\\organized"
 duplicates = ".\\duplicates"
 
 [options]
-#output = "none" | "compact" | "default"
+#output = "none" | "summary" | "compact" | "default"
 output = "compact"
 stopOnError = true
