@@ -2,14 +2,18 @@
 	"name": "photiso",
 	"version": "0.0.1",
 	"private": true,
+	"main": "build/main.js",
 	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
+		"dev:svelte": "vite dev",
+		"build:svelte": "vite build",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
-		"format": "prettier --write ."
+		"format": "prettier --write .",
+		"build:electron": "tsc --p ./src-electron/tsconfig.json",
+		"dev:electron": "electron ./build/main.js",
+		"dev": "concurrently -n=dev,electron -c='#ff3e00',blue \"npm run dev:svelte\" \"npm run dev:electron\""
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^3.0.0",
@@ -18,6 +22,9 @@
 		"@types/eslint": "^8.56.0",
 		"@typescript-eslint/eslint-plugin": "^7.0.0",
 		"@typescript-eslint/parser": "^7.0.0",
+		"concurrently": "^8.2.2",
+		"cross-env": "^7.0.3",
+		"electron": "^29.1.0",
 		"eslint": "^8.56.0",
 		"eslint-config-prettier": "^9.1.0",
 		"eslint-plugin-svelte": "^2.35.1",
