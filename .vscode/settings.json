@@ -1,4 +1,0 @@
-{
-    "editor.defaultFormatter": "statiolake.vscode-rustfmt",
-    "debug.allowBreakpointsEverywhere": true
-}

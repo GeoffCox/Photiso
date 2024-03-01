@@ -1,45 +1,38 @@
-# Photiso
+# create-svelte
 
-Photiso is a photo organization command line tool. It organizes your photos into directories by year and month. It names your photos by year-month-day hour-minute-second-fractionsOfSeconds.
+Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
 
-## WARNING
+## Creating a project
 
-You should always back up your photos before running Photiso. While extra care has been taken to ensure Photiso is non-destructive, there is always the chance that something could go horriblly wrong.
+If you're seeing this, you've probably already done this step. Congrats!
 
+```bash
+# create a new project in the current directory
+npm create svelte@latest
 
-- Photiso was written to never delete files nor directories.
-- Photiso should never copy over an existing file.
+# create a new project in my-app
+npm create svelte@latest my-app
+```
 
-## Configuration
+## Developing
 
-Photiso's configuration file lets you specify 3 directories:
-- unorganized: The directory containing the files you want Photiso to inspect, move, and name.
-- organized: This is the directory where you want your photos to be move to to organize them.
-- duplicates: This is the directory where you want duplicate photos to be moved to.
+Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
 
-The unorganized and organized directories can be the same directory if you want to organize them in place.
+```bash
+npm run dev
 
-## Special Situations
+# or start the server and open the app in a new browser tab
+npm run dev -- --open
+```
 
-- Photiso looks at the EXIF data stored with the file that was written there by your digital cameral or phone. If the EXIF data is missing for a file, then Photiso falls back to using the created and modified dates of the file.
-- If Photiso encounters a duplicate photo (exact same file contents), that photo gets placed into the duplicates directory.
-- If Photiso encounters a file at the same location, then it will append a 3-digit number to the end of the file being moved to avoid the conflict.
+## Building
 
-## Technology
+To create a production version of your app:
 
-Photiso 2.0 (this version)
-- Written in Rust.
-- Is a command line application.
-- Can be compiled to run on any of the operating systems supported by Rust (e.g. Windows, Mac, Unix).
-- Uses the kamadak-exif crate which is super-fast at extracting EXIF date.
-- Has a configuration file in TOML format.
+```bash
+npm run build
+```
 
-Photiso 1.0
-- Written in .NET and Windows Presentation Foundation (WPF)
-- Is a windows client application.
-- While pretty, this version was somewhat slow for large number of files.
-- Could only run on Windows
-- Lacks fractional second precision when inspecting the EXIF data.
+You can preview the production build with `npm run preview`.
 
-
-
+> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
