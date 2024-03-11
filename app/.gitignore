@@ -8,7 +8,7 @@ build
 *.local
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
 .DS_Store
+.vscode/*
+.svelte-kit
+!.vscode/extensions.json
