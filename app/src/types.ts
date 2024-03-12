@@ -7,10 +7,10 @@ export type PhotisoWindow = Window &
 		dialogApi: DialogApi;
 	};
 
-export type UserSettings = {
-	fileAction: 'move' | 'copy';
-	defaultDirectoryName: 'date' | 'previous' | 'empty';
-	defaultDirectoryDateFormat: 'year' | 'year-month' | 'year-month-day';
-	defaultFileName: 'datetime' | 'original' | 'empty';
-	defaultFileNamePrefix: string;
-};
+	export type UserSettings = {
+		fileAction: 'move' | 'copy';
+		defaultDirectoryName: 'date' | 'previous' | 'empty';
+		defaultDirectoryDateFormat: 'year' | 'year-month' | 'year-month-day';
+		defaultFileName: 'datetime' | 'original' | 'empty';
+		defaultFileNamePrefix: string;
+	};

@@ -17,6 +17,7 @@ const dialogApi : DialogApi = {
 }
 
 const pathApi : PathApi = {
+  //TODO invoke the path methods so that preload will work in full electron app
   ...path
 };
 

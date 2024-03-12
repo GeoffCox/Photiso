@@ -16,16 +16,16 @@ export type PhotoInfo = {
   resolutionX?: number;
   resolutionY?: number;
   width?: number;
-  
+
   exifData?: any;
-}
+};
 
 export type PhotisoApi = {
   start: (dir: string) => Promise<void>;
   next: () => Promise<string | undefined>;
   getInfo: () => Promise<PhotoInfo>;
   getSrc: () => Promise<string>;
-  getNoOverwriteSuffix : (destFile: string) => Promise<string | undefined>;
+  getNoOverwriteSuffix: (destFile: string) => Promise<string | undefined>;
   copy: (dest: string) => Promise<void>;
   move: (dest: string) => Promise<void>;
 };
@@ -33,5 +33,5 @@ export type PhotisoApi = {
 export type PathApi = typeof path;
 
 export type DialogApi = {
-	browseForDirectory: (startDir: string) => Promise<string | undefined>;
-}
+  browseForDirectory: (startDir: string) => Promise<string | undefined>;
+};

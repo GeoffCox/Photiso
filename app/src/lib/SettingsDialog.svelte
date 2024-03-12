@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Button, Dialog, Input, Label, Radio, Switch } from '@geoffcox/sterling-svelte';
-	import type { UserSettings } from '../types';
-	import { onMount } from 'svelte';
+	import type { UserSettings } from './ipc.types';
 
 	export let open = false;
 
@@ -75,7 +74,7 @@
 		`_${hourExample}-${minuteExample}-${secondExample}-${subSecondExample}`;
 </script>
 
-<Dialog bind:open>
+<Dialog bind:open on:close on:cancel>
 	<div slot="title">Options</div>
 	<div class="body" slot="body">
 		<div class="section-header">When organizing photos</div>

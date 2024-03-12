@@ -2,8 +2,11 @@ import { app, BrowserWindow, ipcMain, nativeImage } from "electron";
 import * as path from "node:path";
 import { createOrganizer } from "./organizer";
 import { createDialogApi } from "./dialogApi";
-// import * as fs from "node:fs";
-// import { ExifData, ExifImage } from "exif";
+
+if (app.getName() === "Electron") {
+  app.setName("photiso");
+  console.log("app name", app.getName());
+}
 
 const loadUrl = (appWindow: BrowserWindow) => {
   appWindow.loadURL("http://localhost:5173").catch((e) => {
@@ -16,6 +19,7 @@ const loadUrl = (appWindow: BrowserWindow) => {
 
 const createWindow = () => {
   const appWindow = new BrowserWindow({
+    title: "photiso",
     width: 800,
     height: 600,
     webPreferences: {
@@ -49,7 +53,7 @@ const createWindow = () => {
 //   start = Date.now();
 //   const src = image.toDataURL();
 //   console.log(`image toDataUrl: ${Date.now() - start}ms`);
-  
+
 //   start = Date.now();
 //   const tnImage = await nativeImage.createThumbnailFromPath(file, { width: 100, height: 100 });
 //   console.log(`createThumbnailFromPath: ${Date.now() - start}ms`);
@@ -57,7 +61,7 @@ const createWindow = () => {
 //   start = Date.now();
 //   const thumbnail = tnImage.toDataURL();
 //   console.log(`thumbnail toDataUrl: ${Date.now() - start}ms`);
-  
+
 //   return {
 //     src,
 //     thumbnail,
@@ -70,7 +74,6 @@ const photisoApi = createOrganizer();
 const dialogApi = createDialogApi();
 
 app.whenReady().then(() => {
-
   ipcMain.handle("start", (_event, dir) => photisoApi.start(dir));
   ipcMain.handle("next", (_event) => photisoApi.next());
   ipcMain.handle("getInfo", (_event) => photisoApi.getInfo());
@@ -79,6 +82,7 @@ app.whenReady().then(() => {
   ipcMain.handle("copy", (_event, dest) => photisoApi.copy(dest));
   ipcMain.handle("move", (_event, dest) => photisoApi.move(dest));
   ipcMain.handle("browseForDirectory", (_event, startDir) => dialogApi.browseForDirectory(startDir));
+
   createWindow();
 
   app.on("activate", () => {

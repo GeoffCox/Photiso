@@ -8,16 +8,40 @@
 	import { DateTime } from 'luxon';
 	import SettingsIcon from '$lib/icons/SettingsIcon.svelte';
 	import SettingsDialog from '$lib/SettingsDialog.svelte';
+	
+	// ----- Settings -----//
+	const userSettingsStorageKey = 'photiso.UserSettings';
+
+	let settings : UserSettings = {
+		fileAction: 'move',
+		defaultDirectoryName: 'previous',
+		defaultDirectoryDateFormat: 'year-month',
+		defaultFileName: 'datetime',
+		defaultFileNamePrefix: 'IMG_'
+	};
+
+	const loadSettings = () => {
+		const settingsText = window.localStorage.getItem(userSettingsStorageKey);
+		settings = settingsText ? JSON.parse(settingsText) as UserSettings : settings;
+	}
+
+	const saveSettings = async () => {
+		localStorage.setItem(userSettingsStorageKey, JSON.stringify(settings));
+	}
+
+	$: console.log('settings', settings);
 
 	// ----- Photiso API -----//
 	let photisoApi: PhotisoApi | undefined = undefined;
 	let path: PathApi | undefined = undefined;
 	let dialogApi: DialogApi | undefined = undefined;
 
-	onMount(() => {
+	onMount(async () => {
 		photisoApi = (<PhotisoWindow>window).photisoApi;
 		path = (<PhotisoWindow>window).pathApi;
 		dialogApi = (<PhotisoWindow>window).dialogApi;
+		
+		loadSettings();
 	});
 
 	// ----- Source State -----//
@@ -60,16 +84,6 @@
 
 	// ----- Other State ----- /
 	let optionsDialogOpen = false;
-
-	let settings : UserSettings = {
-		fileAction: 'move',
-		defaultDirectoryName: 'previous',
-		defaultDirectoryDateFormat: 'year-month',
-		defaultFileName: 'datetime',
-		defaultFileNamePrefix: 'IMG_'
-	};
-
-	$: console.log({...settings});
 
 	// ----- Methods -----/
 
@@ -161,6 +175,12 @@
 	const onFileNameSuggestion = (suggestedFileName: string) => {
 		destinationFileName = suggestedFileName;
 	};
+
+	const onCloseSettingsDialog = async () => {
+		await tick();
+		saveSettings();
+	}
+
 </script>
 
 <div class="root">
@@ -242,7 +262,7 @@
 		<div>{destinationFile}</div>
 		<div>{noCollisionDestFileName}</div>
 	</div>
-	<SettingsDialog bind:open={optionsDialogOpen} bind:settings={settings} />
+	<SettingsDialog bind:open={optionsDialogOpen} bind:settings={settings} on:close={onCloseSettingsDialog} />
 </div>
 
 <style>
@@ -294,16 +314,6 @@
 		transform-origin: 50% 50%;
 		transform: rotate(var(--rotate));
 	}
-
-	/* img.orientation-6 {
-		transform-origin: 50% 50%;
-		transform: rotate(90deg);
-	}
-
-	img.orientation-5 {
-		transform-origin: 50% 50%;
-		transform: rotate(-90deg) scaleX(-1);
-	} */
 
 	.photo-info {
 		justify-self: center;
