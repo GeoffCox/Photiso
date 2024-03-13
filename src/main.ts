@@ -20,8 +20,8 @@ const loadUrl = (appWindow: BrowserWindow) => {
 const createWindow = () => {
   const appWindow = new BrowserWindow({
     title: "photiso",
-    width: 800,
-    height: 600,
+    width: 1200,
+    height: 800,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: true,

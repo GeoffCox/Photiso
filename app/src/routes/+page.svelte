@@ -8,11 +8,13 @@
 	import { DateTime } from 'luxon';
 	import SettingsIcon from '$lib/icons/SettingsIcon.svelte';
 	import SettingsDialog from '$lib/SettingsDialog.svelte';
-	
+	import DestinationDirectoryPicker from '$lib/DestinationDirectoryPicker.svelte';
+	import { recentDirectories } from '$lib/stores';
+
 	// ----- Settings -----//
 	const userSettingsStorageKey = 'photiso.UserSettings';
 
-	let settings : UserSettings = {
+	let settings: UserSettings = {
 		fileAction: 'move',
 		defaultDirectoryName: 'previous',
 		defaultDirectoryDateFormat: 'year-month',
@@ -22,12 +24,12 @@
 
 	const loadSettings = () => {
 		const settingsText = window.localStorage.getItem(userSettingsStorageKey);
-		settings = settingsText ? JSON.parse(settingsText) as UserSettings : settings;
-	}
+		settings = settingsText ? (JSON.parse(settingsText) as UserSettings) : settings;
+	};
 
 	const saveSettings = async () => {
 		localStorage.setItem(userSettingsStorageKey, JSON.stringify(settings));
-	}
+	};
 
 	$: console.log('settings', settings);
 
@@ -35,14 +37,6 @@
 	let photisoApi: PhotisoApi | undefined = undefined;
 	let path: PathApi | undefined = undefined;
 	let dialogApi: DialogApi | undefined = undefined;
-
-	onMount(async () => {
-		photisoApi = (<PhotisoWindow>window).photisoApi;
-		path = (<PhotisoWindow>window).pathApi;
-		dialogApi = (<PhotisoWindow>window).dialogApi;
-		
-		loadSettings();
-	});
 
 	// ----- Source State -----//
 	let sourceDir: string = '/Users/geoff/github/Photiso/photos/unorganized';
@@ -56,6 +50,7 @@
 	$: sourcePath = file ? path?.parse(file) : undefined;
 	$: sourceFileName = sourcePath ? sourcePath.name : undefined;
 	$: sourceExtension = sourcePath ? sourcePath.ext : undefined;
+
 	// ----- Destination State -----/
 	let destinationDir: string = '/Users/geoff/github/Photiso/photos/organized';
 	let destinationSubDir: string = '';
@@ -68,16 +63,20 @@
 		: sourceFileName;
 
 	//TODO: Update move to separate dir and file?  Export an API for path methods?
-	$: destinationFile = (destinationDir && destinationFileName && sourceExtension) ? path?.join(
-		destinationDir,
-		destinationSubDir,
-		`${destinationFileName}${sourceExtension ?? ''}`) : undefined;
+	$: destinationFile =
+		destinationDir && destinationFileName && sourceExtension
+			? path?.join(
+					destinationDir,
+					destinationSubDir,
+					`${destinationFileName}${sourceExtension ?? ''}`
+				)
+			: undefined;
 
 	let noCollisionDestFileName: string | undefined = undefined;
 
 	const updateNoCollisionDestFile = async (destFile?: string) => {
 		const suffix = destFile ? await photisoApi?.getNoOverwriteSuffix(destFile) : undefined;
-		noCollisionDestFileName = (destFile && suffix) ? `${destinationFileName}${suffix}` : undefined;
+		noCollisionDestFileName = destFile && suffix ? `${destinationFileName}${suffix}` : undefined;
 	};
 
 	$: updateNoCollisionDestFile(destinationFile);
@@ -119,6 +118,14 @@
 	};
 
 	// ----- Handlers -----//
+
+	onMount(async () => {
+		photisoApi = (<PhotisoWindow>window).photisoApi;
+		path = (<PhotisoWindow>window).pathApi;
+		dialogApi = (<PhotisoWindow>window).dialogApi;
+
+		loadSettings();
+	});
 
 	const onStart = async () => {
 		await tick();
@@ -163,12 +170,20 @@
 				path.join(destinationDir, destinationSubDir)
 			);
 			if (selectedDir) {
+				if (destinationSubDir && !recentDestinationDirs.includes(destinationSubDir)) {
+					recentDestinationDirs.unshift(destinationSubDir);
+					recentDestinationDirs = recentDestinationDirs.slice(0, 5);
+				}
 				destinationSubDir = path.relative(destinationDir, selectedDir);
 			}
 		}
 	};
 
 	const onRecentDestinationDir = (recentDestinationDir: string) => {
+		if (destinationSubDir && !recentDestinationDirs.includes(destinationSubDir)) {
+			recentDestinationDirs.unshift(destinationSubDir);
+			recentDestinationDirs = recentDestinationDirs.slice(0, 5);
+		}
 		destinationSubDir = recentDestinationDir;
 	};
 
@@ -179,13 +194,14 @@
 	const onCloseSettingsDialog = async () => {
 		await tick();
 		saveSettings();
-	}
-
+	};
 </script>
 
 <div class="root">
 	<div class="header">
-		<Button on:click={() => optionsDialogOpen = true}><SettingsIcon width="1em" height="1em" /></Button>
+		<Button on:click={() => (optionsDialogOpen = true)}
+			><SettingsIcon width="1em" height="1em" /></Button
+		>
 	</div>
 	<div class="source-pane">
 		<div class="source-directory">
@@ -209,51 +225,71 @@
 		</div>
 	</div>
 	<div class="destination-pane">
-		<div class="destination-directory">
+		<DestinationDirectoryPicker
+			bind:rootDirectory={destinationDir}
+			bind:relativeDirectory={destinationSubDir}
+			recentDirectories={recentDestinationDirs}
+		/>
+		<!-- <div class="destination-directory">
 			<Label text="Organized Photos Directory">
 				<Input bind:value={destinationDir} />
 			</Label>
 			<Button on:click={onDestinationBrowse}>...</Button>
 		</div>
-		<div class="destination-subdirectory">
-			<Label text="Destination Directory">
-				<Input bind:value={destinationSubDir} />
-			</Label>
-			<Button on:click={onDestinationSubDirBrowse}>...</Button>
-		</div>
-		<div class="suggested-directories">
-			{#if recentDestinationDirs && recentDestinationDirs.length > 0}
-			<Label text="Suggestions" for="dummy_id">
-				{#each recentDestinationDirs as recentDir}
-					<Button on:click={() => onRecentDestinationDir(recentDir)} variant="tool square"
-						>{recentDir}</Button
-					>
-				{/each}
-			</Label>
-			{/if}
-		</div>
-		<div class="destination-file">
-			<Label
-				text="File Name"
-				status={noCollisionDestFileName ? 'warning' : undefined}
-				message={noCollisionDestFileName ? 'This file already exists' : undefined}
-			>
-				<Input bind:value={destinationFileName} />
-			</Label>
-			<div class="destination-extension">{sourceExtension ?? ''}</div>
-		</div>
-		<div class="suggested-files">
-			<Label text="Suggestions" for="dummy_id">
-				{#if sourceFileName}
-					<Button on:click={() => sourceFileName && onFileNameSuggestion(sourceFileName)} variant="tool square">{sourceFileName}</Button>
+		<div>
+			<div class="destination-subdirectory">
+				<Label text="Destination Directory">
+					<Input bind:value={destinationSubDir} />
+				</Label>
+				<Button on:click={onDestinationSubDirBrowse}>...</Button>
+			</div>
+			<div class="suggested-directories">
+				{#if recentDestinationDirs && recentDestinationDirs.length > 0}
+					<Label text="Recent" for="dummy_id">
+						{#each recentDestinationDirs as recentDir}
+							<Button on:click={() => onRecentDestinationDir(recentDir)} variant="tool square"
+								>{recentDir}</Button
+							>
+						{/each}
+					</Label>
 				{/if}
-				{#if suggestedDestinationFileName}
-					<Button on:click={() => suggestedDestinationFileName && onFileNameSuggestion(suggestedDestinationFileName)} variant="tool square">{suggestedDestinationFileName}</Button>
-				{/if}
-				{#if noCollisionDestFileName}
-					<Button on:click={() => noCollisionDestFileName && onFileNameSuggestion(noCollisionDestFileName)} variant="tool square">{noCollisionDestFileName}</Button>
-				{/if}
-			</Label>
+			</div>
+		</div> -->
+		<div>
+			<div class="destination-file">
+				<Label
+					text="File Name"
+					status={noCollisionDestFileName ? 'warning' : undefined}
+					message={noCollisionDestFileName ? 'This file already exists' : undefined}
+				>
+					<Input bind:value={destinationFileName} />
+				</Label>
+				<div class="destination-extension">{sourceExtension ?? ''}</div>
+			</div>
+			<div class="suggested-files">
+				<Label text="Suggestions" for="dummy_id">
+					{#if sourceFileName}
+						<Button
+							on:click={() => sourceFileName && onFileNameSuggestion(sourceFileName)}
+							variant="tool square">{sourceFileName}</Button
+						>
+					{/if}
+					{#if suggestedDestinationFileName}
+						<Button
+							on:click={() =>
+								suggestedDestinationFileName && onFileNameSuggestion(suggestedDestinationFileName)}
+							variant="tool square">{suggestedDestinationFileName}</Button
+						>
+					{/if}
+					{#if noCollisionDestFileName}
+						<Button
+							on:click={() =>
+								noCollisionDestFileName && onFileNameSuggestion(noCollisionDestFileName)}
+							variant="tool square">{noCollisionDestFileName}</Button
+						>
+					{/if}
+				</Label>
+			</div>
 		</div>
 		<div class="actions">
 			<Button on:click={onMove} title={destinationFile}>Move</Button>
@@ -262,7 +298,7 @@
 		<div>{destinationFile}</div>
 		<div>{noCollisionDestFileName}</div>
 	</div>
-	<SettingsDialog bind:open={optionsDialogOpen} bind:settings={settings} on:close={onCloseSettingsDialog} />
+	<SettingsDialog bind:open={optionsDialogOpen} bind:settings on:close={onCloseSettingsDialog} />
 </div>
 
 <style>
@@ -270,7 +306,7 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		grid-template-rows: auto 1fr;
-		grid-template-areas: "header header" "sourcePane destinationPane";
+		grid-template-areas: 'header header' 'sourcePane destinationPane';
 		column-gap: 1em;
 		height: 100%;
 	}

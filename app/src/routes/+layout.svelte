@@ -1,6 +1,11 @@
 <script lang="ts">
 	import '@geoffcox/sterling-svelte/css/sterling.css';
 	import { applyLightDarkMode } from '@geoffcox/sterling-svelte';
+	import { createDispatcher } from '$lib/dispatcher';
+	import { setContext } from 'svelte';
+
+	const dispatcher = createDispatcher();
+  	setContext("dispatcher", dispatcher);
 </script>
 
 <div class="app" use:applyLightDarkMode={{ atDocumentRoot: true, mode: 'light' }}>
