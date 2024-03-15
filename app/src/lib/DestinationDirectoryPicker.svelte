@@ -1,65 +1,38 @@
 <script lang="ts">
-	import type { PhotisoWindow } from '../types';
-	import type { DialogApi, PathApi } from './ipc.types';
-
-	import { onMount } from 'svelte';
 	import { Label, Input, Button } from '@geoffcox/sterling-svelte';
+	import { getDialogApi, getPathApi } from './ipc.apis';
 
-	export let rootDirectory: string | undefined = undefined;
-	export let relativeDirectory: string | undefined = undefined;
-	export let recentDirectories: string[] = [];
-
-	let dialogApi: DialogApi | undefined = undefined;
-	let path: PathApi | undefined = undefined;
-
-	onMount(async () => {
-		dialogApi = (<PhotisoWindow>window).dialogApi;
-		path = (<PhotisoWindow>window).pathApi;
-	});
-
-	const onRootDirectoryBrowse = async () => {
-		if (path && rootDirectory) {
-			const selectedDir = await dialogApi!.browseForDirectory(rootDirectory);
-			if (selectedDir) {
-				rootDirectory = selectedDir;
-			}
-		}
-	};
+    import { organizedDirectory, destinationRelativeDirectory, recentDirectories} from './stores'
 
 	const onRelativeDirectoryBrowse = async () => {
-		if (path && rootDirectory) {
-			const selectedDir = await dialogApi!.browseForDirectory(
-				path.join(rootDirectory, relativeDirectory || '')
-			);
+		const path = getPathApi();
+		const dialog = getDialogApi();
+		if (path && dialog && $organizedDirectory) {
+			const currentDir = await path.join($organizedDirectory, $destinationRelativeDirectory || '');
+			const selectedDir = await dialog!.browseForDirectory(currentDir);
 
 			if (selectedDir) {
-				relativeDirectory = path.relative(rootDirectory, selectedDir);
+				destinationRelativeDirectory.set(await path.relative($organizedDirectory, selectedDir));
 			}
 		}
 	};
 
 	const onRecentDirectory = (recentDir: string) => {
-		relativeDirectory = recentDir;
+		destinationRelativeDirectory.set(recentDir);
 	};
 </script>
 
 <div class="destination-directory-picker">
-	<div class="root-directory">
-		<Label text="Organized Photos Directory">
-			<Input bind:value={rootDirectory} />
-		</Label>
-		<Button on:click={onRootDirectoryBrowse}>...</Button>
-	</div>
 	<div class="relative-directory">
 		<Label text="Destination Directory">
-			<Input bind:value={relativeDirectory} />
+			<Input bind:value={$destinationRelativeDirectory} />
 		</Label>
 		<Button on:click={onRelativeDirectoryBrowse}>...</Button>
 	</div>
-	{#if recentDirectories && recentDirectories.length > 0}
+	{#if $recentDirectories && $recentDirectories.length > 0}
 		<div class="recent-directories">
 			<Label text="Recent" for="dummy_id">
-				{#each recentDirectories as recentDir}
+				{#each $recentDirectories as recentDir}
 					<Button on:click={() => onRecentDirectory(recentDir)} variant="tool square"
 						>{recentDir}</Button
 					>
@@ -77,7 +50,6 @@
 		row-gap: 2em;
 	}
 
-	.root-directory,
 	.relative-directory {
 		align-items: flex-end;
 		column-gap: 0.5em;

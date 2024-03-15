@@ -3,9 +3,22 @@
 	import { applyLightDarkMode } from '@geoffcox/sterling-svelte';
 	import { createDispatcher } from '$lib/dispatcher';
 	import { setContext } from 'svelte';
+	import { userSettings } from '$lib/stores';
 
 	const dispatcher = createDispatcher();
   	setContext("dispatcher", dispatcher);
+
+	// default settings
+	userSettings.set({
+		fileAction: 'move',
+		defaultDirectoryName: 'previous',
+		defaultDirectoryDateFormat: 'year-month',
+		defaultFileName: 'datetime',
+		defaultFileNamePrefix: 'IMG_'
+	});
+
+	dispatcher.loadSettings();
+	
 </script>
 
 <div class="app" use:applyLightDarkMode={{ atDocumentRoot: true, mode: 'light' }}>
@@ -24,7 +37,7 @@
 			'Open Sans',
 			sans-serif;
 
-		height: 100vh;
+		/* height: 100vh; */
 		position: absolute;
 		top: 0;
 		right: 0;
@@ -37,5 +50,9 @@
 
 	.app {
 		height: 100%;
+		display: grid;
+		place-content: stretch;
+		place-items: stretch;
+		overflow: hidden;
 	}
 </style>

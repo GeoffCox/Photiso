@@ -23,14 +23,43 @@ export type PhotoInfo = {
 export type PhotisoApi = {
   start: (dir: string) => Promise<void>;
   next: () => Promise<string | undefined>;
-  getInfo: () => Promise<PhotoInfo>;
-  getSrc: () => Promise<string>;
+  peek: (count: number) => Promise<string[]>;
+  getInfo: (file: string) => Promise<PhotoInfo>;
+  getSrc: (file: string) => Promise<string>;
   getNoOverwriteSuffix: (destFile: string) => Promise<string | undefined>;
-  copy: (dest: string) => Promise<void>;
-  move: (dest: string) => Promise<void>;
+  copy: (source: string, dest: string) => Promise<void>;
+  move: (source: string, dest: string) => Promise<void>;
 };
 
-export type PathApi = typeof path;
+export type ParsedPath = {
+  root: string;
+  dir: string;
+  base: string;
+  ext: string;
+  name: string;
+}
+
+export type FormatInputPathObject = {
+  root?: string | undefined;
+  dir?: string | undefined;
+  base?: string | undefined;
+  ext?: string | undefined;
+  name?: string | undefined;
+}
+
+export type PathApi = {
+  normalize: (path: string) => Promise<string>;
+  join: (...paths: string[]) => Promise<string>;
+  resolve: (...paths: string[]) => Promise<string>;
+  isAbsolute: (path: string) => Promise<boolean>;
+  relative: (from: string, to: string) => Promise<string>;
+  dirname: (path: string) => Promise<string>;
+  basename: (path: string, suffix?: string) => Promise<string>;
+  extname: (path: string) => Promise<string>;
+  parse: (path: string) =>  Promise<ParsedPath>;
+  format: (pathObject: FormatInputPathObject) => Promise<string>;
+  toNamespacedPath: (path: string) => Promise<string>;
+}
 
 export type DialogApi = {
   browseForDirectory: (startDir: string) => Promise<string | undefined>;

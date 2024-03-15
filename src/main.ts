@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, nativeImage } from "electron";
-import * as path from "node:path";
+import * as nodePath from "node:path";
 import { createOrganizer } from "./organizer";
 import { createDialogApi } from "./dialogApi";
 
@@ -26,61 +26,41 @@ const createWindow = () => {
       nodeIntegration: true,
       contextIsolation: true,
       devTools: true,
-      preload: path.join(__dirname, "./preload.js"),
+      preload: nodePath.join(__dirname, "./preload.js"),
     },
   });
 
   loadUrl(appWindow);
 };
 
-// const getPhotoExifData = (file: string): Promise<ExifData> => {
-//   return new Promise<ExifData>((resolve, reject) => {
-//     new ExifImage(file, (error, exifData) => {
-//       if (error) {
-//         reject(error);
-//       } else {
-//         resolve(exifData);
-//       }
-//     });
-//   });
-// };
-
-// const getPhotoData = async (file: string): Promise<{ src: string; thumbnail: string }> => {
-//   let start = Date.now();
-//  const image = nativeImage.createFromPath(file);
-//   console.log(`createFromPath: ${Date.now() - start}ms`);
-
-//   start = Date.now();
-//   const src = image.toDataURL();
-//   console.log(`image toDataUrl: ${Date.now() - start}ms`);
-
-//   start = Date.now();
-//   const tnImage = await nativeImage.createThumbnailFromPath(file, { width: 100, height: 100 });
-//   console.log(`createThumbnailFromPath: ${Date.now() - start}ms`);
-
-//   start = Date.now();
-//   const thumbnail = tnImage.toDataURL();
-//   console.log(`thumbnail toDataUrl: ${Date.now() - start}ms`);
-
-//   return {
-//     src,
-//     thumbnail,
-//   };
-// };
-
-//let startDir: string = "";
-
 const photisoApi = createOrganizer();
 const dialogApi = createDialogApi();
 
 app.whenReady().then(() => {
+  // PhotisoApi
   ipcMain.handle("start", (_event, dir) => photisoApi.start(dir));
   ipcMain.handle("next", (_event) => photisoApi.next());
-  ipcMain.handle("getInfo", (_event) => photisoApi.getInfo());
-  ipcMain.handle("getSrc", (_event) => photisoApi.getSrc());
+  ipcMain.handle("peek", (_event, count) => photisoApi.peek(count));
+  ipcMain.handle("getInfo", (_event, file) => photisoApi.getInfo(file));
+  ipcMain.handle("getSrc", (_event, file) => photisoApi.getSrc(file));
   ipcMain.handle("getNoOverwriteSuffix", (_event, dest) => photisoApi.getNoOverwriteSuffix(dest));
-  ipcMain.handle("copy", (_event, dest) => photisoApi.copy(dest));
-  ipcMain.handle("move", (_event, dest) => photisoApi.move(dest));
+  ipcMain.handle("copy", (_event, source, dest) => photisoApi.copy(source, dest));
+  ipcMain.handle("move", (_event, source, dest) => photisoApi.move(source, dest));
+  
+  // PathApi
+  ipcMain.handle("normalize", (_event, path) => nodePath.normalize(path));
+  ipcMain.handle("join", (_event, paths) => nodePath.join(...paths));
+  ipcMain.handle("resolve", (_event, paths) => nodePath.resolve(...paths));
+  ipcMain.handle("isAbsolute", (_event, path) => nodePath.isAbsolute(path));
+  ipcMain.handle("relative", (_event, from, to) => nodePath.relative(from, to));
+  ipcMain.handle("dirname", (_event, path) => nodePath.dirname(path));
+  ipcMain.handle("basename", (_event, path) => nodePath.basename(path));
+  ipcMain.handle("extname", (_event, path) => nodePath.extname(path));
+  ipcMain.handle("parse", (_event, path) => nodePath.parse(path));
+  ipcMain.handle("format", (_event, pathObject) => nodePath.format(pathObject));
+  ipcMain.handle("toNamespacedPath", (_event, path) => nodePath.toNamespacedPath(path));
+
+  // DialogApi
   ipcMain.handle("browseForDirectory", (_event, startDir) => dialogApi.browseForDirectory(startDir));
 
   createWindow();

@@ -1,21 +1,22 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { PathApi, PhotoInfo } from './ipc.types';
+	import type { ParsedPath, PathApi, PhotoInfo } from './ipc.types';
 	import { DateTime } from 'luxon';
-	import type { PhotisoWindow } from '../types';
 	import prettybytes from 'pretty-bytes';
+	import { getPathApi } from './ipc.apis';
 
 	export let photoInfo: PhotoInfo | undefined;
-	export let sourceDir: string;
+	export let photoPath: ParsedPath | undefined;
 
 	let path: PathApi | undefined = undefined;
 
+
 	onMount(() => {
-		path = (<PhotisoWindow>window).pathApi;
+		path = getPathApi();
 	});
 
 	$: dateTaken = photoInfo?.dateTaken
-		? DateTime.fromISO('2024-01-03T21:59:19.507-08:00')
+		? DateTime.fromISO(photoInfo.dateTaken)
 		: undefined;
 	$: dateTakenText = dateTaken
 		? dateTaken.toLocaleString({
@@ -30,8 +31,8 @@
 			})
 		: undefined;
 
-		$: relativeDir = photoInfo?.file ? `${path?.relative(sourceDir, path?.dirname(photoInfo.file))}` : undefined;
-		$: fileName = photoInfo?.file ? `${path?.basename(photoInfo.file)}` : undefined;
+		$: relativeDir = photoPath?.dir;
+		$: fileName = photoPath?.name;
 
 		$: fileSize = photoInfo?.sizeInBytes ? prettybytes(photoInfo.sizeInBytes) : undefined;
 

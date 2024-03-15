@@ -1,16 +1,16 @@
 <script lang="ts">
 	import { Button, Dialog, Input, Label, Radio, Switch } from '@geoffcox/sterling-svelte';
-	import type { UserSettings } from './ipc.types';
+	import type { UserSettings } from '../types';
 
 	export let open = false;
 
 	export let settings: UserSettings;
 
-	let fileAction: 'move' | 'copy';
-	let defaultDirectoryName: 'date' | 'previous' | 'empty';
-	let defaultDirectoryDateFormat: 'year' | 'year-month' | 'year-month-day';
-	let defaultFileName: 'datetime' | 'original' | 'empty';
-	let defaultFileNamePrefix: string;
+	let fileAction: UserSettings["fileAction"];
+	let defaultDirectoryName: UserSettings["defaultDirectoryName"];
+	let defaultDirectoryDateFormat: UserSettings["defaultDirectoryDateFormat"];
+	let defaultFileName: UserSettings["defaultFileName"];
+	let defaultFileNamePrefix: UserSettings["defaultFileNamePrefix"];
 
 	const loadSettings = () => {
 		fileAction = settings.fileAction;

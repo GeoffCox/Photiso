@@ -1,42 +1,42 @@
 <script lang="ts">
-	import { Label, Input, Button } from "@geoffcox/sterling-svelte";
+	import { Label, Input, Button, Link } from '@geoffcox/sterling-svelte';
 
-    export let fileName : string;
-    export let extension : string = '';
-    export let noOverwriteFileName: string;
-    export let fileNameSuggestions : string[] = [];
+	import { photoPath, destinationFileName, noConflictDestinationFileName, suggestedDestinationFileNames } from './stores'
 
-    const onFileNameSuggestion = (suggestion: string) => {
-		fileName = suggestion;
+	const onFileNameSuggestion = (suggestion: string) => {
+		destinationFileName.set(suggestion);
 	};
-
 </script>
 
 <div class="destination-file-name-picker">
-    <div class="file-name">
-        <Label
-            text="File Name"
-            status={noOverwriteFileName ? 'warning' : undefined}
-            message={noOverwriteFileName ? 'This file already exists' : undefined}
-        >
-            <Input bind:value={fileName} />
-        </Label>
-        <div class="extension">{extension}</div>
-    </div>
-    <div class="suggested-file-names">
-        <Label text="Suggestions" for="dummy_id">
-            {#each fileNameSuggestions as fileSuggestion}
-                <Button
-                    on:click={() => onFileNameSuggestion(fileSuggestion)}
-                    variant="tool square">{fileSuggestion}</Button
-                >
-            {/each}
-        </Label>
-    </div>
+	<div class="file-name">
+		<Label text="File Name" message={$noConflictDestinationFileName}>
+			<Input bind:value={$destinationFileName} />
+			<svelte:fragment slot="message" let:message>
+				<div class="overwrite-message">
+					This file already exists. Consider changing it to <Link
+						href="#"
+						on:click={() => $noConflictDestinationFileName && onFileNameSuggestion($noConflictDestinationFileName)}
+						>{$noConflictDestinationFileName}</Link
+					>
+				</div>
+			</svelte:fragment>
+		</Label>
+		<div class="extension">{$photoPath?.ext}</div>
+	</div>
+	<div class="suggested-file-names">
+		<Label text="Suggestions" for="dummy_id">
+			{#each $suggestedDestinationFileNames as fileSuggestion}
+				<Button on:click={() => onFileNameSuggestion(fileSuggestion)} variant="tool square"
+					>{fileSuggestion}</Button
+				>
+			{/each}
+		</Label>
+	</div>
 </div>
 
 <style>
-    .destination-file-name-picker {
+	.destination-file-name-picker {
 		display: grid;
 		grid-template-columns: 1fr;
 		grid-template-rows: auto;
@@ -67,4 +67,11 @@
 		justify-content: flex-start;
 	}
 
+	.overwrite-message {
+		background-color: var(--stsv-status--warning__background-color);
+		color: var(--stsv-status--warning__color);
+		font-family: inherit;
+		font-size: 0.8em;
+		padding: 0.5em;
+	}
 </style>
