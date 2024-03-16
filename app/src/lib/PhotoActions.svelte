@@ -2,17 +2,17 @@
 	import { Button } from '@geoffcox/sterling-svelte';
 	import { tick } from 'svelte';
 
-	import { photoFile, destinationFile, noConflictDestinationFileName, userSettings} from './stores'
+	import { photo, destinationFile, noConflictDestinationFileName, userSettings} from './stores'
 	import { getDispatcher } from './dispatcher';
 
 	const dispatcher = getDispatcher();
 
 	$: canAct =
-		$photoFile &&
-		$photoFile.length > 0 &&
+		$photo?.file &&
+		$photo.file.length > 0 &&
 		$destinationFile &&
 		$destinationFile.length > 0 &&
-		$photoFile != $destinationFile &&
+		$photo.file != $destinationFile &&
 		!$noConflictDestinationFileName;
 
 
@@ -35,7 +35,7 @@
 
 <div class="photo-actions">
 	<div class="destination">
-		<div>{$photoFile}</div>
+		<div>{$photo?.file}</div>
         <div>to</div>
         <div>{$destinationFile}</div>
 	</div>
@@ -45,7 +45,7 @@
 		{:else}
 			<Button disabled={!canAct} on:click={onCopy} variant="colorful">Copy</Button>
 		{/if}
-		<Button disabled={$photoFile === undefined} on:click={onSkip} variant="secondary">Skip</Button>
+		<Button disabled={$photo?.file === undefined} on:click={onSkip} variant="secondary">Skip</Button>
 	</div>
 </div>
 

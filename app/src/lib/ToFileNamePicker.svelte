@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { Label, Input, Button, Link } from '@geoffcox/sterling-svelte';
 
-	import { photoPath, destinationFileName, noConflictDestinationFileName, suggestedDestinationFileNames } from './stores'
+	import { photo, toFileName, noConflictDestinationFileName, suggestedToFileNames } from './stores'
 
 	const onFileNameSuggestion = (suggestion: string) => {
-		destinationFileName.set(suggestion);
+		toFileName.set(suggestion);
 	};
 </script>
 
 <div class="destination-file-name-picker">
 	<div class="file-name">
 		<Label text="File Name" message={$noConflictDestinationFileName}>
-			<Input bind:value={$destinationFileName} />
+			<Input bind:value={$toFileName} />
 			<svelte:fragment slot="message" let:message>
 				<div class="overwrite-message">
 					This file already exists. Consider changing it to <Link
@@ -22,11 +22,11 @@
 				</div>
 			</svelte:fragment>
 		</Label>
-		<div class="extension">{$photoPath?.ext}</div>
+		<div class="extension">{$photo?.path.ext}</div>
 	</div>
 	<div class="suggested-file-names">
 		<Label text="Suggestions" for="dummy_id">
-			{#each $suggestedDestinationFileNames as fileSuggestion}
+			{#each $suggestedToFileNames as fileSuggestion}
 				<Button on:click={() => onFileNameSuggestion(fileSuggestion)} variant="tool square"
 					>{fileSuggestion}</Button
 				>

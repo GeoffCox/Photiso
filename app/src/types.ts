@@ -1,4 +1,5 @@
-import type { PhotisoApi, PathApi, DialogApi } from '$lib/ipc.types';
+import type { PhotisoApi, PathApi, DialogApi, PhotoInfo, ParsedPath } from '$lib/ipc.types';
+import type { DateTime } from 'luxon';
 
 export type PhotisoWindow = Window &
 	typeof globalThis & {
@@ -14,3 +15,10 @@ export type PhotisoWindow = Window &
 		defaultFileName: 'datetime' | 'original' | 'empty';
 		defaultFileNamePrefix: string;
 	};
+
+	export type Photo = Omit<PhotoInfo, 'dateTaken'> & {
+		src: string;
+		info: PhotoInfo;
+		dateTaken?: DateTime;
+		path: ParsedPath,
+	}

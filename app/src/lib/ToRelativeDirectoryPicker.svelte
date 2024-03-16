@@ -2,37 +2,37 @@
 	import { Label, Input, Button } from '@geoffcox/sterling-svelte';
 	import { getDialogApi, getPathApi } from './ipc.apis';
 
-    import { organizedDirectory, destinationRelativeDirectory, recentDirectories} from './stores'
+    import { toDirectory, toRelativeDirectory, recentToDirectories} from './stores'
 
-	const onRelativeDirectoryBrowse = async () => {
+	const onBrowse = async () => {
 		const path = getPathApi();
 		const dialog = getDialogApi();
-		if (path && dialog && $organizedDirectory) {
-			const currentDir = await path.join($organizedDirectory, $destinationRelativeDirectory || '');
+		if (path && dialog && $toDirectory) {
+			const currentDir = await path.join($toDirectory, $toRelativeDirectory || '');
 			const selectedDir = await dialog!.browseForDirectory(currentDir);
 
 			if (selectedDir) {
-				destinationRelativeDirectory.set(await path.relative($organizedDirectory, selectedDir));
+				toRelativeDirectory.set(await path.relative($toDirectory, selectedDir));
 			}
 		}
 	};
 
 	const onRecentDirectory = (recentDir: string) => {
-		destinationRelativeDirectory.set(recentDir);
+		toRelativeDirectory.set(recentDir);
 	};
 </script>
 
-<div class="destination-directory-picker">
+<div class="to-directory-picker">
 	<div class="relative-directory">
-		<Label text="Destination Directory">
-			<Input bind:value={$destinationRelativeDirectory} />
+		<Label text="In Directory">
+			<Input bind:value={$toRelativeDirectory} />
 		</Label>
-		<Button on:click={onRelativeDirectoryBrowse}>...</Button>
+		<Button on:click={onBrowse}>...</Button>
 	</div>
-	{#if $recentDirectories && $recentDirectories.length > 0}
+	{#if $recentToDirectories && $recentToDirectories.length > 0}
 		<div class="recent-directories">
 			<Label text="Recent" for="dummy_id">
-				{#each $recentDirectories as recentDir}
+				{#each $recentToDirectories as recentDir}
 					<Button on:click={() => onRecentDirectory(recentDir)} variant="tool square"
 						>{recentDir}</Button
 					>
@@ -43,7 +43,7 @@
 </div>
 
 <style>
-	.destination-directory-picker {
+	.to-directory-picker {
 		display: grid;
 		grid-template-columns: 1fr;
 		grid-template-rows: auto;

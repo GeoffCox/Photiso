@@ -1,86 +1,52 @@
 <script lang="ts">
 	import NoPhotoIcon from '$lib/icons/NoPhotoIcon.svelte';
 	import PhotoInfoCard from '$lib/PhotoInfoCard.svelte';
-	import { Button } from '@geoffcox/sterling-svelte';
-	import SettingsIcon from '$lib/icons/SettingsIcon.svelte';
+	import Header from './Header.svelte';
 	import SettingsDialog from '$lib/SettingsDialog.svelte';
-	import DestinationDirectoryPicker from '$lib/DestinationDirectoryPicker.svelte';
+	import DestinationDirectoryPicker from '$lib/ToRelativeDirectoryPicker.svelte';
 	import {
-	dateDestinationRelativeDirectory,
-	dateTimeDestinationFileName,
-	defaultDestinationFileName,
-		defaultDestinationRelativeDirectory,
 		destinationDirectory,
 		destinationFile,
-		destinationFileName,
-		destinationRelativeDirectory,
-		mostRecentDestinationRelativeDirectory,
+		toFileName,
+		toRelativeDirectory,
 		noConflictDestinationFileName,
-		organizedDirectory,
-		photoDateTaken,
-		photoFile,
-		photoInfo,
-		photoPath,
-		photoSrc,
-		photoSrcCache,
-		recentDirectories,
-		suggestedDestinationFileNames,
-		unorganizedDirectory,
+		toDirectory,
+		photo,
+		recentToDirectories,
+		suggestedToFileNames,
+		fromDirectory,
 		userSettings
 	} from '$lib/stores';
 
-	import DestinationFileNamePicker from '$lib/DestinationFileNamePicker.svelte';
+	import DestinationFileNamePicker from '$lib/ToFileNamePicker.svelte';
 	import StartStep from '$lib/StartStep.svelte';
 	import OrganizePhotoActions from '$lib/PhotoActions.svelte';
 	import { getDispatcher } from '$lib/dispatcher';
-	import { getDialogApi } from '$lib/ipc.apis';
+	import FromDirectoryPicker from '$lib/FromDirectoryPicker.svelte';
+	import ToDirectoryPicker from '$lib/ToDirectoryPicker.svelte';
 
 	const dispatcher = getDispatcher();
 
 	let started = false;
 
-	$: rotation = $photoInfo?.rotation ?? 0;
+	$: rotation = $photo?.rotation ?? 0;
 	$: rotate = rotation === 0 ? 0 : 360 - rotation;
 
 	// $: console.log('$userSettings', $userSettings);
 
-	// $: console.log('$unorganizedDirectory', $unorganizedDirectory);
-	$: console.log('$photoFile', $photoFile);
-	// $: console.log('$photoInfo', $photoInfo);
-	$: console.log('$photoSrc.length', $photoSrc?.length);
-	$: console.log('$photoSrcCache keys', Object.keys($photoSrcCache));
-	// $: console.log('$photoDateTaken', $photoDateTaken);
-	// $: console.log('$photoPath', $photoPath);
+	$: console.log('$unorganizedDirectory', $fromDirectory);
+	$: console.log('$photo', $photo);
 
-	// $: console.log('$organizedDirectory', $organizedDirectory);
-	// $: console.log('$destinationRelativeDirectory', $destinationRelativeDirectory);
-	// $: console.log('$destinationFile', $destinationFile);
-	// $: console.log('$destinationFileName', $destinationFileName);
-	// $: console.log('$mostRecentDestinationRelativeDirectory', $mostRecentDestinationRelativeDirectory);
-	// $: console.log('$recentDirectories', $recentDirectories);
-	// $: console.log('$dateDestinationRelativeDirectory', $dateDestinationRelativeDirectory);
-	// $: console.log('$defaultDestinationRelativeDirectory', $defaultDestinationRelativeDirectory);
-	// $: console.log('$dateTimeDestinationFileName', $dateTimeDestinationFileName);
-	// $: console.log('$defaultDestinationFileName', $defaultDestinationFileName);
-	// $: console.log('$suggestedDestinationFileNames', $suggestedDestinationFileNames);
-	// $: console.log('$destinationDirectory', $destinationDirectory);
-	// $: console.log('$destinationFile', $destinationFile);
-	// $: console.log('$noConflictDestinationFileName', $noConflictDestinationFileName);
+	$: console.log('$organizedDirectory', $toDirectory);
+	$: console.log('$destinationRelativeDirectory', $toRelativeDirectory);
+	$: console.log('$destinationFile', $destinationFile);
+	$: console.log('$destinationFileName', $toFileName);
+	$: console.log('$recentDirectories', $recentToDirectories);
+	$: console.log('$suggestedDestinationFileNames', $suggestedToFileNames);
+	$: console.log('$destinationDirectory', $destinationDirectory);
+	$: console.log('$destinationFile', $destinationFile);
+	$: console.log('$noConflictDestinationFileName', $noConflictDestinationFileName);
 
-	// ----- Destination State -----/
-
-	const setDestinationRelativeDirectoryToDefault = (defaultValue?: string) => {
-		destinationRelativeDirectory.set(defaultValue);
-	};
-
-	$: $photoFile, setDestinationRelativeDirectoryToDefault($defaultDestinationRelativeDirectory);
-	
-	const setDestinationFileNameToDefault = (defaultValue?: string) => {
-		destinationFileName.set(defaultValue)
-	}
-	
-	$: $photoFile, setDestinationFileNameToDefault($defaultDestinationFileName);
-	
 	// ----- Other State ----- /
 	let optionsDialogOpen = false;
 
@@ -99,40 +65,40 @@
 </script>
 
 <div class="root">
-	{#if started && $photoSrc}
+	{#if started && $photo}
 		<div class="organizing-view">
 			<div class="header">
-				<Button on:click={() => (optionsDialogOpen = true)}
-					><SettingsIcon width="1em" height="1em" /></Button
-				>
+				<Header />
+			</div>
+			<div class="directories-pane">
+				<FromDirectoryPicker readonly/>
+				<ToDirectoryPicker readonly/>
 			</div>
 			<div class="source-pane">
 				<div class="photo" style={`--rotate:${rotate}deg`}>
-					{#if $photoSrc}
-						<img alt="current" src={$photoSrc} />
+					{#if $photo.src}
+						<img alt="current" src={$photo.src} />
 					{:else}
 						<NoPhotoIcon class="no-photo" />
 					{/if}
 				</div>
 				<div class="photo-info">
-					{#if $photoInfo}
-						<PhotoInfoCard photoInfo={$photoInfo} photoPath={$photoPath} />
-					{/if}
+					<PhotoInfoCard photo={$photo} />
 				</div>
 			</div>
 			<div class="destination-pane">
-				<DestinationDirectoryPicker/>
+				<DestinationDirectoryPicker />
 				<div>
-					<DestinationFileNamePicker/>
+					<DestinationFileNamePicker />
 				</div>
-				<OrganizePhotoActions/>
+				<OrganizePhotoActions />
 			</div>
 		</div>
 	{:else}
 		<div class="start-view">
 			<StartStep
-				bind:unorganizedDirectory={$unorganizedDirectory}
-				bind:organizedDirectory={$organizedDirectory}
+				bind:unorganizedDirectory={$fromDirectory}
+				bind:organizedDirectory={$toDirectory}
 				on:start={onStart}
 			/>
 		</div>
@@ -165,16 +131,19 @@
 	.organizing-view {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		grid-template-rows: auto 1fr;
-		grid-template-areas: 'header header' 'sourcePane destinationPane';
+		grid-template-rows: auto auto 1fr;
+		grid-template-areas: 'header header' 'dirs dirs' 'sourcePane destinationPane';
 		column-gap: 1em;
 	}
 
 	.header {
 		grid-area: header;
+	}
+
+	.directories-pane {
+		grid-area: dirs;
 		display: grid;
-		justify-self: flex-end;
-		padding: 0.5em;
+		grid-template-columns: 1fr 1fr;
 	}
 
 	.source-pane {

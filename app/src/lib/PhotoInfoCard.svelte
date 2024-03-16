@@ -1,25 +1,11 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import type { ParsedPath, PathApi, PhotoInfo } from './ipc.types';
-	import { DateTime } from 'luxon';
 	import prettybytes from 'pretty-bytes';
-	import { getPathApi } from './ipc.apis';
+	import type { Photo } from '../types';
 
-	export let photoInfo: PhotoInfo | undefined;
-	export let photoPath: ParsedPath | undefined;
+	export let photo: Photo | undefined;
 
-	let path: PathApi | undefined = undefined;
-
-
-	onMount(() => {
-		path = getPathApi();
-	});
-
-	$: dateTaken = photoInfo?.dateTaken
-		? DateTime.fromISO(photoInfo.dateTaken)
-		: undefined;
-	$: dateTakenText = dateTaken
-		? dateTaken.toLocaleString({
+	$: dateTakenText = photo?.dateTaken
+		? photo.dateTaken.toLocaleString({
 				year: 'numeric',
 				month: 'short',
 				day: 'numeric',
@@ -31,16 +17,16 @@
 			})
 		: undefined;
 
-		$: relativeDir = photoPath?.dir;
-		$: fileName = photoPath?.name;
+		$: relativeDir = photo?.path.dir;
+		$: fileName = photo?.path.name;
 
-		$: fileSize = photoInfo?.sizeInBytes ? prettybytes(photoInfo.sizeInBytes) : undefined;
+		$: fileSize = photo?.sizeInBytes ? prettybytes(photo.sizeInBytes) : undefined;
 
-		$: swapDimensions = photoInfo?.rotation == 90 || photoInfo?.rotation == 270;
-		$: width = swapDimensions ? photoInfo?.height : photoInfo?.width; 
-		$: height = swapDimensions ? photoInfo?.width : photoInfo?.height; 
-		$: dpiX = swapDimensions ? photoInfo?.resolutionY : photoInfo?.resolutionY; 
-		$: dpiY = swapDimensions ? photoInfo?.resolutionX : photoInfo?.resolutionY; 
+		$: swapDimensions = photo?.rotation == 90 || photo?.rotation == 270;
+		$: width = swapDimensions ? photo?.height : photo?.width; 
+		$: height = swapDimensions ? photo?.width : photo?.height; 
+		$: dpiX = swapDimensions ? photo?.resolutionY : photo?.resolutionY; 
+		$: dpiY = swapDimensions ? photo?.resolutionX : photo?.resolutionY; 
 		
 </script>
 
@@ -57,7 +43,7 @@
 		<div>Size</div>
 		<div>{fileSize}</div>
 	{/if}
-	{#if dateTaken}
+	{#if dateTakenText}
 		<div>Date Taken</div>
 		<div>{dateTakenText}</div>
 	{/if}
@@ -69,13 +55,13 @@
 		<div>Resolution</div>
 		<div>{dpiX}x{dpiY}</div>
 	{/if}
-	{#if photoInfo?.make}
+	{#if photo?.make}
 		<div>Make</div>
-		<div>{photoInfo.make}</div>
+		<div>{photo.make}</div>
 	{/if}
-	{#if photoInfo?.model}
+	{#if photo?.model}
 		<div>Model</div>
-		<div>{photoInfo.model}</div>
+		<div>{photo.model}</div>
 	{/if}
 </div>
 
