@@ -21,7 +21,6 @@
 	import FromDirectoryPicker from '$lib/FromDirectoryPicker.svelte';
 	import ToRootDirectoryPicker from '$lib/ToRootDirectoryPicker.svelte';
 
-	import NoPhotoIcon from '$lib/icons/NoPhotoIcon.svelte';
 	import PhotoInfoCard from '$lib/PhotoInfoCard.svelte';
 
 	import ToRelativeDirectoryPicker from '$lib/ToRelativeDirectoryPicker.svelte';
@@ -29,6 +28,7 @@
 	import PhotoActions from '$lib/PhotoActions.svelte';
 	import { crossfade, fade, fly } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
+	import PhotoImage from '$lib/PhotoImage.svelte';
 
 	const dispatcher = getDispatcher();
 
@@ -36,17 +36,15 @@
 	let visualState: 'welcome' | 'starting' | 'started' | 'loading' | 'ready' | 'acting' | 'done' =
 		'welcome';
 
-	$: rotation = $photo?.rotation ?? 0;
-	$: rotate = rotation === 0 ? 0 : 360 - rotation;
-
 	// ----- Store Logging ----- //
 
 	$: console.log('$userSettings', $userSettings);
 
-	$: console.log('$unorganizedDirectory', $fromDirectory);
+	$: console.log('$fromDirectory', $fromDirectory);
+	$: console.log('$toRootDirectory', $toRootDirectory);
+
 	$: console.log('$photo', $photo);
 
-	$: console.log('$toRootDirectory', $toRootDirectory);
 	$: console.log('$toRelativeDirectory', $toRelativeDirectory);
 	$: console.log('$toFileName', $toFileName);
 
@@ -113,12 +111,8 @@
 						class="from-pane"
 						in:fly={{ x: '-50%', duration: 2000, easing: quintOut }}
 					>
-						<div class="photo" style={`--rotate:${rotate}deg`}>
-							{#if $photo?.src}
-								<img alt="current" src={$photo.src} />
-							{:else}
-								<NoPhotoIcon class="no-photo" />
-							{/if}
+						<div class="photo">
+							<PhotoImage />
 						</div>
 						<div class="photo-info">
 							<PhotoInfoCard photo={$photo} />
@@ -239,7 +233,7 @@
 		grid-area: fromPane;
 		padding: 2em;
 		display: grid;
-		grid-template-rows: 1fr auto auto;
+		grid-template-rows: 1fr auto;
 		row-gap: 2em;
 	}
 
@@ -254,28 +248,7 @@
 	/* ----- From Pane Photo  ----- */
 
 	.photo {
-		overflow: scroll;
 		padding: 0.5em;
-		display: grid;
-		grid-template-columns: 1fr;
-		grid-template-rows: 1fr;
-		place-content: stretch;
-		place-items: stretch;
-	}
-
-	.photo :global(.no-photo) {
-		width: 200px;
-		height: 200px;
-	}
-
-	.photo img {
-		object-fit: contain;
-		width: 90%;
-		height: 90%;
-		max-width: 100%;
-		max-height: 100%;
-		transform-origin: 50% 50%;
-		transform: rotate(var(--rotate));
 	}
 
 	.photo-info {

@@ -61,6 +61,7 @@
 		grid-template-columns: auto auto;
 		justify-content: flex-start;
 		justify-items: flex-start;
+		align-items: flex-start;
 		column-gap: 0.5em;
 		font-size: 1.5em;
 	}
