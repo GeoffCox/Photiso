@@ -2,8 +2,9 @@
 	import { Button } from '@geoffcox/sterling-svelte';
 	import { tick } from 'svelte';
 
-	import { photo, toFile, noConflictToFileName, userSettings} from './stores'
+	import { photo, toFile, noConflictToFileName, userSettings } from './stores';
 	import { getDispatcher } from './dispatcher';
+	import DirectoryHierarchy from './FileHierarchy.svelte';
 
 	const dispatcher = getDispatcher();
 
@@ -14,7 +15,6 @@
 		$toFile.length > 0 &&
 		$photo.file != $toFile &&
 		!$noConflictToFileName;
-
 
 	const onCopy = async () => {
 		await tick();
@@ -34,46 +34,57 @@
 </script>
 
 <div class="photo-actions">
-	<div class="destination">
-		<div>{$photo?.file}</div>
-        <div>to</div>
-        <div>{$toFile}</div>
+	<div class="from">
+		<DirectoryHierarchy path={$photo?.file ?? ''} />
 	</div>
 	<div class="actions">
+		<Button disabled={$photo?.file === undefined} on:click={onSkip} variant="secondary">Skip</Button
+		>
 		{#if $userSettings?.fileAction === 'move'}
 			<Button disabled={!canAct} on:click={onMove} variant="colorful">Move</Button>
 		{:else}
 			<Button disabled={!canAct} on:click={onCopy} variant="colorful">Copy</Button>
 		{/if}
-		<Button disabled={$photo?.file === undefined} on:click={onSkip} variant="secondary">Skip</Button>
+	</div>
+	<div class="to">
+		<DirectoryHierarchy path={$toFile ?? ''} />
 	</div>
 </div>
 
 <style>
-    .photo-actions {
-        display: grid;
-		justify-content: flex-start;
-		justify-items: flex-start;
+	.photo-actions {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
 		column-gap: 1em;
-    }
+		border-top: 1px solid var(--stsv-button--colorful__border-color);
+		border-bottom: 1px solid var(--stsv-button--colorful__border-color);
+		padding: 0.5em;
+	}
+	
+	.from {
+		justify-self: flex-end;
+		align-self: flex-start;
+		font-size: 0.8em;
+	}
+
 	.actions {
 		display: grid;
-		grid-template-columns: auto auto;
-		justify-content: flex-start;
-		justify-items: flex-start;
-		align-items: flex-start;
-		column-gap: 0.5em;
+		grid-template-rows: auto auto;
+		justify-content: center;
+		justify-items: center;
+		justify-self: stretch;
+		align-self: center;
+		row-gap: 0.5em;
 		font-size: 1.5em;
 	}
 
-    .destination {
-        display: grid;
-        justify-items: flex-start;
-        font-size: 0.8em;
-        margin: 1em;
-    }
+	.to {
+		justify-self: flex-start;
+		align-self: flex-start;
+		font-size: 0.8em;
+	}
 
-    .destination :nth-child(2) {
-        margin-left: 2em;
-    }
+	.photo-actions :global(.file) {
+		color: var(--stsv-button--colorful__background-color);
+	}
 </style>

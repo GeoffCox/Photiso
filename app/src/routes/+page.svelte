@@ -107,21 +107,11 @@
 					<ToRootDirectoryPicker readonly />
 				</div>
 				<div class="organize-view">
-					<div
-						class="from-pane"
-						in:fly={{ x: '-50%', duration: 2000, easing: quintOut }}
-					>
-						<div class="photo">
-							<PhotoImage />
-						</div>
-						<div class="photo-info">
-							<PhotoInfoCard photo={$photo} />
-						</div>
+					<div class="from-pane" in:fly={{ x: '-50%', duration: 2000, easing: quintOut }}>
+						<PhotoImage photo={$photo} />
+						<PhotoInfoCard photo={$photo} />
 					</div>
-					<div
-						class="to-pane"
-						in:fly={{ x: '150%', duration: 2000, easing: quintOut }}
-					>
+					<div class="to-pane" in:fly={{ x: '150%', duration: 2000, easing: quintOut }}>
 						<ToRelativeDirectoryPicker />
 						<div>
 							<ToFileNamePicker />
@@ -233,8 +223,16 @@
 		grid-area: fromPane;
 		padding: 2em;
 		display: grid;
-		grid-template-rows: 1fr auto;
-		row-gap: 2em;
+		grid-template-rows: auto auto;
+		justify-content: stretch;
+		justify-items: stretch;
+		align-content: flex-start;
+		align-items: flex-start;
+	}
+
+	.from-pane :global(:nth-child(2)) {
+		align-self: flex-start;
+		justify-self: center;
 	}
 
 	.to-pane {
@@ -243,15 +241,7 @@
 		grid-template-rows: auto;
 		row-gap: 2em;
 		padding: 2em;
-	}
-
-	/* ----- From Pane Photo  ----- */
-
-	.photo {
-		padding: 0.5em;
-	}
-
-	.photo-info {
-		justify-self: center;
+		justify-items: stretch;
+		align-content: flex-start;
 	}
 </style>

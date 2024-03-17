@@ -2,11 +2,11 @@
 	version="1.1"
 	xmlns="http://www.w3.org/2000/svg"
 	xmlns:xlink="http://www.w3.org/1999/xlink"
-	viewBox="0 0 512 512"
+	viewBox="0 0 512 335"
 	xml:space="preserve"
 	fill="#000000"
-	width="100px"
-	height="100px"
+	width="512px"
+	height="335px"
 	{...$$restProps}
 	><g stroke-width="0"></g><g stroke-linecap="round" stroke-linejoin="round"></g><g>
 		<g>

@@ -27,42 +27,29 @@
 		$: height = swapDimensions ? photo?.width : photo?.height; 
 		$: dpiX = swapDimensions ? photo?.resolutionY : photo?.resolutionY; 
 		$: dpiY = swapDimensions ? photo?.resolutionX : photo?.resolutionY; 
+
+		$: dimensions = (width || height) ? `${width}x${height}` : '';
+		$: resoluton = (dpiX || dpiY) ? `${dpiX}x${dpiY}` : '';
 		
 </script>
 
 <div class="exif-card">
-	{#if relativeDir}
 		<div>Directory</div>
-		<div>{relativeDir}</div>
-	{/if}
-	{#if fileName}
+		<div>{relativeDir ?? ''}</div>
 		<div>File</div>
-		<div>{fileName}</div>
-	{/if}
-	{#if fileSize}
+		<div>{fileName ?? ''}</div>
 		<div>Size</div>
-		<div>{fileSize}</div>
-	{/if}
-	{#if dateTakenText}
+		<div>{fileSize ?? ''}</div>
 		<div>Date Taken</div>
-		<div>{dateTakenText}</div>
-	{/if}
-	{#if width && height}
+		<div>{dateTakenText ?? ''}</div>
 		<div>Dimensions</div>
-		<div>{width}x{height}</div>
-	{/if}
-	{#if dpiX && dpiY}
+		<div>{dimensions ?? ''}</div>
 		<div>Resolution</div>
-		<div>{dpiX}x{dpiY}</div>
-	{/if}
-	{#if photo?.make}
+		<div>{resoluton ?? ''}</div>
 		<div>Make</div>
-		<div>{photo.make}</div>
-	{/if}
-	{#if photo?.model}
+		<div>{photo?.make ?? ''}</div>
 		<div>Model</div>
-		<div>{photo.model}</div>
-	{/if}
+		<div>{photo?.model ?? ''}</div>
 </div>
 
 <style>
