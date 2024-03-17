@@ -44,10 +44,12 @@
 
 	.from-directory-picker.readonly {
 		grid-template-columns: 1fr;
+		align-items: center;
+		column-gap: 0;
 	}
 
 	.from-directory-picker.readonly div {
-		padding: 0.5em;
+		padding: 0.5 0 0 0.5em;
 		border: 2px solid transparent;
 	}
 </style>

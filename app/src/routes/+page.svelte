@@ -1,113 +1,165 @@
 <script lang="ts">
-	import NoPhotoIcon from '$lib/icons/NoPhotoIcon.svelte';
-	import PhotoInfoCard from '$lib/PhotoInfoCard.svelte';
-	import Header from './Header.svelte';
-	import SettingsDialog from '$lib/SettingsDialog.svelte';
-	import DestinationDirectoryPicker from '$lib/ToRelativeDirectoryPicker.svelte';
+	import { Button } from '@geoffcox/sterling-svelte';
+
 	import {
-		destinationDirectory,
-		destinationFile,
+		toDirectory,
+		toFile,
 		toFileName,
 		toRelativeDirectory,
-		noConflictDestinationFileName,
-		toDirectory,
+		noConflictToFileName,
+		toRootDirectory,
 		photo,
 		recentToDirectories,
 		suggestedToFileNames,
 		fromDirectory,
 		userSettings
 	} from '$lib/stores';
-
-	import DestinationFileNamePicker from '$lib/ToFileNamePicker.svelte';
-	import StartStep from '$lib/StartStep.svelte';
-	import OrganizePhotoActions from '$lib/PhotoActions.svelte';
 	import { getDispatcher } from '$lib/dispatcher';
+
+	import Header from './Header.svelte';
+
 	import FromDirectoryPicker from '$lib/FromDirectoryPicker.svelte';
-	import ToDirectoryPicker from '$lib/ToDirectoryPicker.svelte';
+	import ToRootDirectoryPicker from '$lib/ToRootDirectoryPicker.svelte';
+
+	import NoPhotoIcon from '$lib/icons/NoPhotoIcon.svelte';
+	import PhotoInfoCard from '$lib/PhotoInfoCard.svelte';
+
+	import ToRelativeDirectoryPicker from '$lib/ToRelativeDirectoryPicker.svelte';
+	import ToFileNamePicker from '$lib/ToFileNamePicker.svelte';
+	import PhotoActions from '$lib/PhotoActions.svelte';
+	import { crossfade, fade, fly } from 'svelte/transition';
+	import { quintOut } from 'svelte/easing';
 
 	const dispatcher = getDispatcher();
 
-	let started = false;
+	// ----- State ----- //
+	let visualState: 'welcome' | 'starting' | 'started' | 'loading' | 'ready' | 'acting' | 'done' =
+		'welcome';
 
 	$: rotation = $photo?.rotation ?? 0;
 	$: rotate = rotation === 0 ? 0 : 360 - rotation;
 
-	// $: console.log('$userSettings', $userSettings);
+	// ----- Store Logging ----- //
+
+	$: console.log('$userSettings', $userSettings);
 
 	$: console.log('$unorganizedDirectory', $fromDirectory);
 	$: console.log('$photo', $photo);
 
-	$: console.log('$organizedDirectory', $toDirectory);
-	$: console.log('$destinationRelativeDirectory', $toRelativeDirectory);
-	$: console.log('$destinationFile', $destinationFile);
-	$: console.log('$destinationFileName', $toFileName);
+	$: console.log('$toRootDirectory', $toRootDirectory);
+	$: console.log('$toRelativeDirectory', $toRelativeDirectory);
+	$: console.log('$toFileName', $toFileName);
+
+	$: console.log('$toDirectory', $toDirectory);
+	$: console.log('$toFile', $toFile);
+	$: console.log('$noConflictDestinationFileName', $noConflictToFileName);
+
 	$: console.log('$recentDirectories', $recentToDirectories);
 	$: console.log('$suggestedDestinationFileNames', $suggestedToFileNames);
-	$: console.log('$destinationDirectory', $destinationDirectory);
-	$: console.log('$destinationFile', $destinationFile);
-	$: console.log('$noConflictDestinationFileName', $noConflictDestinationFileName);
 
-	// ----- Other State ----- /
-	let optionsDialogOpen = false;
+	// ----- Visual Handlers -----//
 
-	// ----- Methods -----/
-
-	// ----- Handlers -----//
-
-	const onStart = async () => {
-		await dispatcher.startOrganizing();
-		started = true;
+	const onStart = () => {
+		visualState = 'starting';
+		dispatcher.startOrganizing();
 	};
 
-	const onCloseSettingsDialog = async () => {
-		dispatcher.saveSettings();
+	const onStarted = () => {
+		visualState = 'started';
 	};
+
+	$: console.log(visualState);
+
+	// ----- Animation -----//
+
+	const [send, receive] = crossfade({
+		duration: 1500,
+		easing: quintOut
+	});
+
+	const fromDirectoryKey = 'fromDirectory';
+	const toRootDirectoryKey = 'toRootDirectory';
+	const photoKey = 'photo';
+	const infoKey = 'info';
+
+	$: starting = visualState === 'starting';
+	$: started = visualState === 'started';
 </script>
 
 <div class="root">
-	{#if started && $photo}
-		<div class="organizing-view">
-			<div class="header">
-				<Header />
-			</div>
-			<div class="directories-pane">
-				<FromDirectoryPicker readonly/>
-				<ToDirectoryPicker readonly/>
-			</div>
-			<div class="source-pane">
-				<div class="photo" style={`--rotate:${rotate}deg`}>
-					{#if $photo.src}
-						<img alt="current" src={$photo.src} />
-					{:else}
-						<NoPhotoIcon class="no-photo" />
-					{/if}
-				</div>
-				<div class="photo-info">
-					<PhotoInfoCard photo={$photo} />
-				</div>
-			</div>
-			<div class="destination-pane">
-				<DestinationDirectoryPicker />
-				<div>
-					<DestinationFileNamePicker />
-				</div>
-				<OrganizePhotoActions />
-			</div>
+	<div class="main-view">
+		<div class="header">
+			<Header />
 		</div>
-	{:else}
-		<div class="start-view">
-			<StartStep
-				bind:unorganizedDirectory={$fromDirectory}
-				bind:organizedDirectory={$toDirectory}
-				on:start={onStart}
-			/>
+		<div class="split-view">
+			{#if starting || started}
+				<div
+					class="display-from-directory"
+					in:send={{ key: fromDirectoryKey }}
+					out:receive={{ key: fromDirectoryKey }}
+				>
+					<FromDirectoryPicker readonly />
+				</div>
+				<div
+					class="display-to-root-directory"
+					in:send={{ key: toRootDirectoryKey }}
+					out:receive={{ key: toRootDirectoryKey }}
+					on:introend={onStarted}
+				>
+					<ToRootDirectoryPicker readonly />
+				</div>
+				<div class="organize-view">
+					<div
+						class="from-pane"
+						in:fly={{ x: '-50%', duration: 2000, easing: quintOut }}
+					>
+						<div class="photo" style={`--rotate:${rotate}deg`}>
+							{#if $photo?.src}
+								<img alt="current" src={$photo.src} />
+							{:else}
+								<NoPhotoIcon class="no-photo" />
+							{/if}
+						</div>
+						<div class="photo-info">
+							<PhotoInfoCard photo={$photo} />
+						</div>
+					</div>
+					<div
+						class="to-pane"
+						in:fly={{ x: '150%', duration: 2000, easing: quintOut }}
+					>
+						<ToRelativeDirectoryPicker />
+						<div>
+							<ToFileNamePicker />
+						</div>
+						<PhotoActions />
+					</div>
+				</div>
+			{:else}
+				<div />
+				<div />
+				<div class="welcome-view">
+					<div
+						class="from-directory"
+						in:send={{ key: fromDirectoryKey }}
+						out:receive={{ key: fromDirectoryKey }}
+					>
+						<FromDirectoryPicker />
+					</div>
+					<div
+						class="to-root-directory"
+						in:send={{ key: toRootDirectoryKey }}
+						out:receive={{ key: toRootDirectoryKey }}
+					>
+						<ToRootDirectoryPicker />
+					</div>
+					<div out:fade={{ duration: 500 }} class="start-action">
+						<Button on:click={onStart}>Start Organizing</Button>
+					</div>
+				</div>
+			{/if}
 		</div>
-	{/if}
-	<SettingsDialog
-		bind:open={optionsDialogOpen}
-		bind:settings={$userSettings}
-		on:close={onCloseSettingsDialog}
-	/>
+	</div>
 </div>
 
 <style>
@@ -120,39 +172,86 @@
 		padding: 1em;
 	}
 
-	.start-view {
+	.main-view {
 		display: grid;
-		grid-template-columns: 1fr;
-		grid-template-rows: 1fr;
-		place-content: stretch;
-		place-items: stretch;
-	}
-
-	.organizing-view {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		grid-template-rows: auto auto 1fr;
-		grid-template-areas: 'header header' 'dirs dirs' 'sourcePane destinationPane';
 		column-gap: 1em;
+		grid-template-columns: 1fr;
+		grid-template-rows: auto 1fr;
 	}
 
-	.header {
-		grid-area: header;
-	}
+	/* ----- Split view  ----- */
 
-	.directories-pane {
-		grid-area: dirs;
+	.split-view {
 		display: grid;
+		column-gap: 1em;
 		grid-template-columns: 1fr 1fr;
+		grid-template-rows: auto 1fr;
+		grid-template-areas: 'displayFromDir displayToRootDir' 'organize organize';
 	}
 
-	.source-pane {
-		grid-area: sourcePane;
+	.display-from-directory {
+		grid-area: displayFromDir;
+	}
+
+	.display-to-root-directory {
+		grid-area: displayToRootDir;
+	}
+
+	/* ----- Welcome view  ----- */
+	.welcome-view {
+		display: grid;
+		column-gap: 1em;
+		grid-template-columns: 1fr 1fr;
+		grid-template-rows: auto auto;
+		align-content: center;
+		align-items: center;
+		grid-template-areas: 'fromDir toRootDir' 'startAction startAction';
+		grid-area: organize;
+	}
+
+	.from-directory {
+		grid-area: fromDir;
+		align-self: center;
+	}
+
+	.to-root-directory {
+		grid-area: toRootDir;
+		align-self: center;
+	}
+
+	.start-action {
+		grid-area: startAction;
+		justify-self: center;
+	}
+
+	/* ----- Split view  ----- */
+
+	.organize-view {
+		display: grid;
+		column-gap: 1em;
+		grid-template-columns: 1fr 1fr;
+		grid-template-rows: 1fr;
+		grid-template-areas: 'fromPane toPane';
+		grid-area: organize;
+	}
+
+	.from-pane {
+		grid-area: fromPane;
 		padding: 2em;
 		display: grid;
 		grid-template-rows: 1fr auto auto;
 		row-gap: 2em;
 	}
+
+	.to-pane {
+		grid-area: toPane;
+		display: grid;
+		grid-template-rows: auto;
+		row-gap: 2em;
+		padding: 2em;
+	}
+
+	/* ----- From Pane Photo  ----- */
 
 	.photo {
 		overflow: scroll;
@@ -165,8 +264,8 @@
 	}
 
 	.photo :global(.no-photo) {
-		width: 90%;
-		height: 90%;
+		width: 200px;
+		height: 200px;
 	}
 
 	.photo img {
@@ -181,15 +280,5 @@
 
 	.photo-info {
 		justify-self: center;
-	}
-
-	.destination-pane {
-		grid-area: destinationPane;
-		display: grid;
-		grid-template-rows: auto;
-		align-items: center;
-		row-gap: 2em;
-		padding: 2em;
-		align-self: center;
 	}
 </style>

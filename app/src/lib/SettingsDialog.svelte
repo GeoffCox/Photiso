@@ -6,11 +6,16 @@
 
 	export let settings: UserSettings;
 
+	let copyChecked = false;
 	let fileAction: UserSettings["fileAction"];
 	let defaultDirectoryName: UserSettings["defaultDirectoryName"];
 	let defaultDirectoryDateFormat: UserSettings["defaultDirectoryDateFormat"];
 	let defaultFileName: UserSettings["defaultFileName"];
 	let defaultFileNamePrefix: UserSettings["defaultFileNamePrefix"];
+
+	$: {
+		fileAction = copyChecked ? 'copy' :	 'move';
+	}
 
 	const loadSettings = () => {
 		fileAction = settings.fileAction;
@@ -79,7 +84,7 @@
 	<div class="body" slot="body">
 		<div class="section-header">When organizing photos</div>
 		<div class="section">
-			<Switch onText="Copy" offText="Move" />
+			<Switch onText="Copy" offText="Move" bind:checked={copyChecked} />
 		</div>
 		<div class="section-header">For each photo, default the directory name to</div>
 		<div class="section">

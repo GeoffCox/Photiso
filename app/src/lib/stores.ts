@@ -18,7 +18,7 @@ export const photo = writable<Photo | undefined>();
 // ----- Destination Stores ----- //
 
 /** The directory that is the destination for organized photos */
-export const toDirectory = writable<string | undefined>(
+export const toRootDirectory = writable<string | undefined>(
 	'/Users/geoff/github/Photiso/photos/organized'
 );
 
@@ -35,8 +35,8 @@ export const recentToDirectories = writable<string[]>([]);
 export const suggestedToFileNames = writable<string[]>([]);
 
 /** The full path to the destination directory **/
-export const destinationDirectory: Readable<string | undefined> = derived(
-	[toDirectory, toRelativeDirectory],
+export const toDirectory: Readable<string | undefined> = derived(
+	[toRootDirectory, toRelativeDirectory],
 	([$organizedDirectory, $destinationRelativeDirectory], set) => {
 		const path = getPathApi();
 		if (path && $organizedDirectory) {
@@ -50,8 +50,8 @@ export const destinationDirectory: Readable<string | undefined> = derived(
 );
 
 /** The full path to the destination file **/
-export const destinationFile: Readable<string | undefined> = derived(
-	[destinationDirectory, toFileName, photo],
+export const toFile: Readable<string | undefined> = derived(
+	[toDirectory, toFileName, photo],
 	([$destinationDirectory, $destinationFileName, $photo], set) => {
 		const path = getPathApi();
 		if (path && $destinationDirectory && $destinationFileName && $photo?.path?.ext) {
@@ -65,8 +65,8 @@ export const destinationFile: Readable<string | undefined> = derived(
 );
 
 /** The destination file name that does not cause an overwrite conflict **/
-export const noConflictDestinationFileName: Readable<string | undefined> = derived(
-	[destinationFile, toFileName],
+export const noConflictToFileName: Readable<string | undefined> = derived(
+	[toFile, toFileName],
 	([$destinationFile, $destinationFileName], set) => {
 		const photiso = getPhotisoApi();
 		if (photiso && $destinationFile) {

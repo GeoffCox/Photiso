@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Label, Input, Button, Link } from '@geoffcox/sterling-svelte';
 
-	import { photo, toFileName, noConflictDestinationFileName, suggestedToFileNames } from './stores'
+	import { photo, toFileName, noConflictToFileName, suggestedToFileNames } from './stores'
 
 	const onFileNameSuggestion = (suggestion: string) => {
 		toFileName.set(suggestion);
@@ -10,14 +10,14 @@
 
 <div class="destination-file-name-picker">
 	<div class="file-name">
-		<Label text="File Name" message={$noConflictDestinationFileName}>
+		<Label text="File Name" message={$noConflictToFileName}>
 			<Input bind:value={$toFileName} />
 			<svelte:fragment slot="message" let:message>
 				<div class="overwrite-message">
 					This file already exists. Consider changing it to <Link
 						href="#"
-						on:click={() => $noConflictDestinationFileName && onFileNameSuggestion($noConflictDestinationFileName)}
-						>{$noConflictDestinationFileName}</Link
+						on:click={() => $noConflictToFileName && onFileNameSuggestion($noConflictToFileName)}
+						>{$noConflictToFileName}</Link
 					>
 				</div>
 			</svelte:fragment>

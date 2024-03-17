@@ -2,17 +2,17 @@
 	import { Label, Input, Button } from '@geoffcox/sterling-svelte';
 	import { getDialogApi, getPathApi } from './ipc.apis';
 
-    import { toDirectory, toRelativeDirectory, recentToDirectories} from './stores'
+    import { toRootDirectory, toRelativeDirectory, recentToDirectories} from './stores'
 
 	const onBrowse = async () => {
 		const path = getPathApi();
 		const dialog = getDialogApi();
-		if (path && dialog && $toDirectory) {
-			const currentDir = await path.join($toDirectory, $toRelativeDirectory || '');
+		if (path && dialog && $toRootDirectory) {
+			const currentDir = await path.join($toRootDirectory, $toRelativeDirectory || '');
 			const selectedDir = await dialog!.browseForDirectory(currentDir);
 
 			if (selectedDir) {
-				toRelativeDirectory.set(await path.relative($toDirectory, selectedDir));
+				toRelativeDirectory.set(await path.relative($toRootDirectory, selectedDir));
 			}
 		}
 	};

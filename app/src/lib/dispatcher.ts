@@ -2,21 +2,19 @@ import type { Unsubscriber } from 'svelte/store';
 import {
 	recentToDirectories,
 	fromDirectory,
-	destinationFile,
+	toFile,
 	userSettings,
 	toRelativeDirectory,
 	photo,
 	toFileName,
 	suggestedToFileNames
 } from './stores';
-import { getContext, tick } from 'svelte';
+import { getContext } from 'svelte';
 import { getPathApi, getPhotisoApi } from './ipc.apis';
 import type { Photo, UserSettings } from '../types';
 import { DateTime } from 'luxon';
 
 const userSettingsStorageKey = 'photiso.UserSettings';
-
-const cachePhotoCount = 3;
 
 export const createDispatcher = () => {
 	const unsubscribers: Unsubscriber[] = [];
@@ -34,7 +32,7 @@ export const createDispatcher = () => {
 	unsubscribers.push(
 		toRelativeDirectory.subscribe((value) => ($destinationRelativeDirectory = value))
 	);
-	unsubscribers.push(destinationFile.subscribe((value) => ($destinationFile = value)));
+	unsubscribers.push(toFile.subscribe((value) => ($destinationFile = value)));
 	unsubscribers.push(recentToDirectories.subscribe((value) => ($recentDirectories = value)));
 	unsubscribers.push(fromDirectory.subscribe((value) => ($unorganizedDirectory = value)));
 	unsubscribers.push(userSettings.subscribe((value) => ($userSettings = value)));
@@ -167,18 +165,20 @@ export const createDispatcher = () => {
 
 	const photoCache: Record<string, Photo> = {};
 
-	const fillCache = async () => {
-		const photiso = getPhotisoApi();
-		const peekFiles = await photiso.peek(cachePhotoCount);
+	// const cachePhotoCount = 3;
 
-		for (let i = 0; i < peekFiles.length; i++) {
-			const peekFile = peekFiles[i];
-			if (!photoCache[peekFile]) {
-				photoCache[peekFile] = await loadPhoto(peekFile);
-				console.log('dispatcher.fillCache-added:', peekFile);
-			}
-		}
-	};
+	// const fillCache = async () => {
+	// 	const photiso = getPhotisoApi();
+	// 	const peekFiles = await photiso.peek(cachePhotoCount);
+
+	// 	for (let i = 0; i < peekFiles.length; i++) {
+	// 		const peekFile = peekFiles[i];
+	// 		if (!photoCache[peekFile]) {
+	// 			photoCache[peekFile] = await loadPhoto(peekFile);
+	// 			console.log('dispatcher.fillCache-added:', peekFile);
+	// 		}
+	// 	}
+	// };
 
 	const loadCachedPhoto = async (file: string): Promise<Photo> => {
 		const result = photoCache[file];
@@ -207,8 +207,9 @@ export const createDispatcher = () => {
 
 			// await the next photo and any UI updates
 			// before asking to fill the cache
-			await tick();
-			fillCache();
+			// setTimeout(() => {
+			// 	fillCache();
+			// }, 10000);
 		} else {
 			console.log('dispatcher.nextPhoto-none found.');
 			photo.set(undefined);

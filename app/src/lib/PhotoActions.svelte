@@ -2,7 +2,7 @@
 	import { Button } from '@geoffcox/sterling-svelte';
 	import { tick } from 'svelte';
 
-	import { photo, destinationFile, noConflictDestinationFileName, userSettings} from './stores'
+	import { photo, toFile, noConflictToFileName, userSettings} from './stores'
 	import { getDispatcher } from './dispatcher';
 
 	const dispatcher = getDispatcher();
@@ -10,10 +10,10 @@
 	$: canAct =
 		$photo?.file &&
 		$photo.file.length > 0 &&
-		$destinationFile &&
-		$destinationFile.length > 0 &&
-		$photo.file != $destinationFile &&
-		!$noConflictDestinationFileName;
+		$toFile &&
+		$toFile.length > 0 &&
+		$photo.file != $toFile &&
+		!$noConflictToFileName;
 
 
 	const onCopy = async () => {
@@ -37,7 +37,7 @@
 	<div class="destination">
 		<div>{$photo?.file}</div>
         <div>to</div>
-        <div>{$destinationFile}</div>
+        <div>{$toFile}</div>
 	</div>
 	<div class="actions">
 		{#if $userSettings?.fileAction === 'move'}
