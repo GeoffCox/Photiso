@@ -82,6 +82,10 @@ export const createOrganizer = (): PhotisoApi => {
     return await getPhotoInfo(file);
   };
 
+  const getThumbnailSrc = async (file: string): Promise<string> => {
+    return Promise.resolve(nativeImage.createFromPath(file).resize({width: 400}).toDataURL());
+  };
+
   const getSrc = async (file: string): Promise<string> => {
     return Promise.resolve(nativeImage.createFromPath(file).toDataURL());
   };
@@ -153,6 +157,7 @@ export const createOrganizer = (): PhotisoApi => {
     next,
     peek,
     getInfo,
+    getThumbnailSrc,
     getSrc,
     getNoOverwriteSuffix,
     copy,

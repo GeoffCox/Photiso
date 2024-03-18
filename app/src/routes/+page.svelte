@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { crossfade, fade, fly } from 'svelte/transition';
+	import { quintOut } from 'svelte/easing';
+
 	import { Button } from '@geoffcox/sterling-svelte';
 
 	import {
@@ -20,15 +23,13 @@
 
 	import FromDirectoryPicker from '$lib/FromDirectoryPicker.svelte';
 	import ToRootDirectoryPicker from '$lib/ToRootDirectoryPicker.svelte';
-
+	
+	import PhotoImage from '$lib/PhotoImage.svelte';
 	import PhotoInfoCard from '$lib/PhotoInfoCard.svelte';
 
 	import ToRelativeDirectoryPicker from '$lib/ToRelativeDirectoryPicker.svelte';
 	import ToFileNamePicker from '$lib/ToFileNamePicker.svelte';
 	import PhotoActions from '$lib/PhotoActions.svelte';
-	import { crossfade, fade, fly } from 'svelte/transition';
-	import { quintOut } from 'svelte/easing';
-	import PhotoImage from '$lib/PhotoImage.svelte';
 
 	const dispatcher = getDispatcher();
 
@@ -60,6 +61,7 @@
 	const onStart = () => {
 		visualState = 'starting';
 		dispatcher.startOrganizing();
+		dispatcher.saveAppState();
 	};
 
 	const onStarted = () => {
@@ -116,8 +118,10 @@
 						<div>
 							<ToFileNamePicker />
 						</div>
-						<PhotoActions />
 					</div>
+				</div>
+				<div class="actions">
+					<PhotoActions />
 				</div>
 			{:else}
 				<div />
@@ -169,8 +173,8 @@
 		display: grid;
 		column-gap: 1em;
 		grid-template-columns: 1fr 1fr;
-		grid-template-rows: auto 1fr;
-		grid-template-areas: 'displayFromDir displayToRootDir' 'organize organize';
+		grid-template-rows: auto 1fr auto;
+		grid-template-areas: 'displayFromDir displayToRootDir' 'organize organize' 'actions actions';
 	}
 
 	.display-from-directory {
@@ -180,6 +184,12 @@
 	.display-to-root-directory {
 		grid-area: displayToRootDir;
 	}
+
+	.actions {
+		grid-area: actions;
+		justify-self: center;
+	}
+
 
 	/* ----- Welcome view  ----- */
 	.welcome-view {
@@ -214,9 +224,10 @@
 		display: grid;
 		column-gap: 1em;
 		grid-template-columns: 1fr 1fr;
-		grid-template-rows: 1fr;
+		grid-template-rows: 1fr auto;
 		grid-template-areas: 'fromPane toPane';
 		grid-area: organize;
+		align-self: center;
 	}
 
 	.from-pane {
@@ -225,9 +236,10 @@
 		display: grid;
 		grid-template-rows: auto auto;
 		justify-content: stretch;
-		justify-items: stretch;
+		justify-items: center;
 		align-content: flex-start;
 		align-items: flex-start;
+		row-gap: 1em;
 	}
 
 	.from-pane :global(:nth-child(2)) {

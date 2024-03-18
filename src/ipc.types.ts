@@ -25,6 +25,7 @@ export type PhotisoApi = {
   next: () => Promise<string | undefined>;
   peek: (count: number) => Promise<string[]>;
   getInfo: (file: string) => Promise<PhotoInfo>;
+  getThumbnailSrc: (file: string) => Promise<string>;
   getSrc: (file: string) => Promise<string>;
   getNoOverwriteSuffix: (destFile: string) => Promise<string | undefined>;
   copy: (source: string, dest: string) => Promise<void>;

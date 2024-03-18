@@ -18,6 +18,7 @@
 	});
 
 	dispatcher.loadSettings();
+	dispatcher.loadAppState();
 	
 </script>
 

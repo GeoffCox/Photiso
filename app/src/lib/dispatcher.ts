@@ -1,4 +1,4 @@
-import type { Unsubscriber } from 'svelte/store';
+import { get, type Unsubscriber } from 'svelte/store';
 import {
 	recentToDirectories,
 	fromDirectory,
@@ -7,34 +7,36 @@ import {
 	toRelativeDirectory,
 	photo,
 	toFileName,
-	suggestedToFileNames
+	suggestedToFileNames,
+	toRootDirectory,
 } from './stores';
 import { getContext } from 'svelte';
 import { getPathApi, getPhotisoApi } from './ipc.apis';
-import type { Photo, UserSettings } from '../types';
+import type { MruAppState, Photo, UserSettings } from '../types';
 import { DateTime } from 'luxon';
 
 const userSettingsStorageKey = 'photiso.UserSettings';
+const appStateStorageKey = 'photiso.AppState';
 
 export const createDispatcher = () => {
 	const unsubscribers: Unsubscriber[] = [];
 
+	let $fromDirectory: string | undefined;
+
 	let $photo: Photo | undefined;
 
-	let $destinationRelativeDirectory: string | undefined;
-	let $destinationFile: string | undefined;
+	let $toRelativeDirectory: string | undefined;
+	let $toFile: string | undefined;
 	let $recentDirectories: string[];
-	let $unorganizedDirectory: string | undefined;
 	let $userSettings: UserSettings | undefined;
+
+	unsubscribers.push(fromDirectory.subscribe((value) => ($fromDirectory = value)));
 
 	unsubscribers.push(photo.subscribe((value) => ($photo = value)));
 
-	unsubscribers.push(
-		toRelativeDirectory.subscribe((value) => ($destinationRelativeDirectory = value))
-	);
-	unsubscribers.push(toFile.subscribe((value) => ($destinationFile = value)));
+	unsubscribers.push(toRelativeDirectory.subscribe((value) => ($toRelativeDirectory = value)));
+	unsubscribers.push(toFile.subscribe((value) => ($toFile = value)));
 	unsubscribers.push(recentToDirectories.subscribe((value) => ($recentDirectories = value)));
-	unsubscribers.push(fromDirectory.subscribe((value) => ($unorganizedDirectory = value)));
 	unsubscribers.push(userSettings.subscribe((value) => ($userSettings = value)));
 
 	const dispose = () => {
@@ -62,9 +64,39 @@ export const createDispatcher = () => {
 		}
 	};
 
+	// ----- MRU App State ----- //
+
+	const loadAppState = () => {
+		const localStorage = globalThis.window?.localStorage;
+		if (localStorage) {
+			const stateText = window.localStorage.getItem(appStateStorageKey);
+			if (stateText) {
+				const mruAppState = JSON.parse(stateText) as MruAppState;
+				fromDirectory.set(mruAppState.fromDirectory);
+				toRootDirectory.set(mruAppState.toRootDirectory);
+				recentToDirectories.set(mruAppState.recentDirectories);
+
+				console.log('dispatcher.loadAppState:', mruAppState);
+			}
+		}
+	};
+
+	const saveAppState = () => {
+		const localStorage = globalThis.window?.localStorage;
+		if (localStorage && $userSettings) {
+			const mruAppState: MruAppState = {
+				fromDirectory: get(fromDirectory),
+				toRootDirectory: get(toRootDirectory),
+				recentDirectories: get(recentToDirectories)
+			};
+			localStorage.setItem(appStateStorageKey, JSON.stringify(mruAppState));
+			console.log('dispatcher.saveAppState:', mruAppState);
+		}
+	};
+
 	// ----- defaults -----//
 
-	let mruDestinationRelativeDirectory: string | undefined = undefined;
+	let mruRelativeToDirectory: string | undefined = undefined;
 
 	const getDefaultDestinationRelativeDirectory = async (photo: Photo) => {
 		const path = getPathApi();
@@ -92,7 +124,7 @@ export const createDispatcher = () => {
 					}
 					break;
 				case 'previous': {
-					return mruDestinationRelativeDirectory;
+					return mruRelativeToDirectory;
 				}
 				case 'empty': {
 					return '';
@@ -146,9 +178,9 @@ export const createDispatcher = () => {
 		const photiso = getPhotisoApi();
 		const path = getPathApi();
 
-		const [info, src, parsedPath] = await Promise.all([
+		const [info, thumbnailSrc, parsedPath] = await Promise.all([
 			photiso.getInfo(file),
-			photiso.getSrc(file),
+			photiso.getThumbnailSrc(file),
 			path?.parse(file)
 		]);
 
@@ -157,7 +189,7 @@ export const createDispatcher = () => {
 		console.log('dispatcher.loadPhoto-loaded:', file, ' in ', Date.now() - timingStart, ' ms.');
 		return {
 			...info,
-			src,
+			thumbnailSrc,
 			dateTaken,
 			path: parsedPath
 		} as Photo;
@@ -216,27 +248,48 @@ export const createDispatcher = () => {
 		}
 	};
 
+	const loadPhotoSrc = async () => {
+		if ($photo) {
+			if ($photo.src) {
+				return;
+			}
+
+			const photiso = getPhotisoApi();
+
+			const src = await photiso.getSrc($photo.file);
+			photo.set({ ...$photo, src });
+		}
+	};
+
 	const startOrganizing = async () => {
 		const photiso = getPhotisoApi();
-		if (photiso && $unorganizedDirectory) {
-			await photiso.start($unorganizedDirectory);
+		if (photiso && $fromDirectory) {
+			await photiso.start($fromDirectory);
+			photo.set(undefined);
+			toRelativeDirectory.set(undefined);
+			toFileName.set(undefined);
+			suggestedToFileNames.set([]);
 			await nextPhoto();
 		}
 	};
 
 	const copyPhoto = async () => {
 		const photiso = getPhotisoApi();
-		if (photiso && $photo && $destinationFile) {
-			mruDestinationRelativeDirectory = $destinationRelativeDirectory;
-			await photiso.copy($photo.file, $destinationFile);
+		if (photiso && $photo && $toFile) {
+			mruRelativeToDirectory = $toRelativeDirectory;
+			await photiso.copy($photo.file, $toFile);
+			mruRelativeToDirectory && pushRecentDirectory(mruRelativeToDirectory);
+			saveAppState();
 		}
 	};
 
 	const movePhoto = async () => {
 		const photiso = getPhotisoApi();
-		if (photiso && $photo && $destinationFile) {
-			mruDestinationRelativeDirectory = $destinationRelativeDirectory;
-			await photiso.move($photo.file, $destinationFile);
+		if (photiso && $photo && $toFile) {
+			mruRelativeToDirectory = $toRelativeDirectory;
+			await photiso.move($photo.file, $toFile);
+			mruRelativeToDirectory && pushRecentDirectory(mruRelativeToDirectory);
+			saveAppState();
 		}
 	};
 
@@ -250,8 +303,11 @@ export const createDispatcher = () => {
 		dispose,
 		loadSettings,
 		saveSettings,
+		loadAppState,
+		saveAppState,
 		startOrganizing,
 		nextPhoto,
+		loadPhotoSrc,
 		copyPhoto,
 		movePhoto,
 		pushRecentDirectory

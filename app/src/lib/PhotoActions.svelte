@@ -70,8 +70,8 @@
 	.actions {
 		display: grid;
 		grid-template-rows: auto auto;
-		justify-content: center;
-		justify-items: center;
+		justify-content: stretch;
+		justify-items: stretch;
 		justify-self: stretch;
 		align-self: center;
 		row-gap: 0.5em;

@@ -8,9 +8,7 @@ export const userSettings = writable<UserSettings>();
 // ----- Source Photo Stores ----- //
 
 /** The directory containing unorganized photos */
-export const fromDirectory = writable<string | undefined>(
-	'/Users/geoff/github/Photiso/photos/unorganized'
-);
+export const fromDirectory = writable<string | undefined>();
 
 /** The current photo to organize */
 export const photo = writable<Photo | undefined>();
@@ -18,9 +16,7 @@ export const photo = writable<Photo | undefined>();
 // ----- Destination Stores ----- //
 
 /** The directory that is the destination for organized photos */
-export const toRootDirectory = writable<string | undefined>(
-	'/Users/geoff/github/Photiso/photos/organized'
-);
+export const toRootDirectory = writable<string | undefined>();
 
 /** The directory relative to organizedDirectory to put the current photo */
 export const toRelativeDirectory = writable<string | undefined>();

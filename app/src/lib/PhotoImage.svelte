@@ -10,8 +10,8 @@
 </script>
 
 <div class="photo" style={`--rotate:${rotate}deg`}>
-	{#if photo?.src}
-		<img alt="current" src={photo.src} />
+	{#if photo?.thumbnailSrc}
+		<img alt="current" src={photo.thumbnailSrc} />
 	{:else}
 		<NoPhotoIcon class="no-photo" />
 	{/if}
@@ -31,12 +31,16 @@
 		object-fit: contain;
 		width: 100%;
 		height: auto;
+		max-width: 400px;
+		max-height: 400px;
 	}
 
 	.photo img {
 		object-fit: contain;
 		width: 100%;
 		height: 100%;
+		max-width: 400px;
+		max-height: 400px;
 		transform-origin: 50% 50%;
 		transform: rotate(var(--rotate));
 	}

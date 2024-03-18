@@ -6,6 +6,7 @@ const photisoApi: PhotisoApi = {
   next: () => ipcRenderer.invoke("next"),
   peek: () => ipcRenderer.invoke("peek"),
   getInfo: (file: string) => ipcRenderer.invoke("getInfo", file),
+  getThumbnailSrc: (file: string) => ipcRenderer.invoke("getThumbnailSrc", file),
   getSrc: (file: string) => ipcRenderer.invoke("getSrc", file),
   getNoOverwriteSuffix: (dest: string) => ipcRenderer.invoke("getNoOverwriteSuffix", dest),
   copy: (source: string, dest: string) => ipcRenderer.invoke("copy", source, dest),
