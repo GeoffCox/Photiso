@@ -4,6 +4,9 @@
 
 	import { photo, toFile, noConflictToFileName, userSettings } from './stores';
 	import { getDispatcher } from './dispatcher';
+	import CopyFileIcon from './icons/CopyFileIcon.svelte';
+	import MoveFileIcon from './icons/MoveFileIcon.svelte';
+	import SkipIcon from './icons/SkipIcon.svelte';
 
 	const dispatcher = getDispatcher();
 
@@ -33,9 +36,9 @@
 </script>
 
 <div class="photo-actions">
-	<Button disabled={$photo?.file === undefined} on:click={onSkip} variant="secondary">Skip</Button>
-	<Button disabled={!canAct} on:click={onCopy}>Copy</Button>
-	<Button disabled={!canAct} on:click={onMove} variant="colorful">Move</Button>
+	<Button disabled={!canAct} on:click={onCopy}><CopyFileIcon width="24px" height="24px"/>Copy</Button>
+	<Button disabled={!canAct} on:click={onMove} variant="colorful"><MoveFileIcon width="24px" height="24px"/>Move</Button>
+	<Button disabled={$photo?.file === undefined} on:click={onSkip}><SkipIcon width="24px" height="24px"/>Skip</Button>
 </div>
 
 <style>
