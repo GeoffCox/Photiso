@@ -7,18 +7,13 @@
 	export let settings: UserSettings;
 
 	let copyChecked = false;
-	let fileAction: UserSettings["fileAction"];
-	let defaultDirectoryName: UserSettings["defaultDirectoryName"];
-	let defaultDirectoryDateFormat: UserSettings["defaultDirectoryDateFormat"];
-	let defaultFileName: UserSettings["defaultFileName"];
-	let defaultFileNamePrefix: UserSettings["defaultFileNamePrefix"];
-
-	$: {
-		fileAction = copyChecked ? 'copy' :	 'move';
-	}
+	let defaultDirectoryName: UserSettings['defaultDirectoryName'];
+	let defaultDirectoryDateFormat: UserSettings['defaultDirectoryDateFormat'];
+	let defaultFileName: UserSettings['defaultFileName'];
+	let defaultFileNamePrefix: UserSettings['defaultFileNamePrefix'];
 
 	const loadSettings = () => {
-		fileAction = settings.fileAction;
+		copyChecked = settings.fileAction === 'copy';
 		defaultDirectoryName = settings.defaultDirectoryName;
 		defaultDirectoryDateFormat = settings.defaultDirectoryDateFormat;
 		defaultFileName = settings.defaultFileName;
@@ -27,13 +22,13 @@
 
 	const saveSettings = () => {
 		settings = {
-			fileAction,
+			fileAction: copyChecked ? 'copy' : 'move',
 			defaultDirectoryName,
 			defaultDirectoryDateFormat,
 			defaultFileName,
 			defaultFileNamePrefix
 		};
-	}
+	};
 
 	const onOK = () => {
 		saveSettings();
@@ -48,7 +43,7 @@
 		if (open) {
 			loadSettings();
 		}
-	};
+	}
 
 	const now = new Date(Date.now());
 	const yearExample = now.getFullYear();

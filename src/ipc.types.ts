@@ -1,6 +1,3 @@
-// import type { ExifData } from "exif";
-import * as path from "node:path";
-
 export type Rotation = 0 | 90 | 180 | 270;
 
 export type PhotoInfo = {
@@ -38,7 +35,7 @@ export type ParsedPath = {
   base: string;
   ext: string;
   name: string;
-}
+};
 
 export type FormatInputPathObject = {
   root?: string | undefined;
@@ -46,7 +43,7 @@ export type FormatInputPathObject = {
   base?: string | undefined;
   ext?: string | undefined;
   name?: string | undefined;
-}
+};
 
 export type PathApi = {
   normalize: (path: string) => Promise<string>;
@@ -57,10 +54,10 @@ export type PathApi = {
   dirname: (path: string) => Promise<string>;
   basename: (path: string, suffix?: string) => Promise<string>;
   extname: (path: string) => Promise<string>;
-  parse: (path: string) =>  Promise<ParsedPath>;
+  parse: (path: string) => Promise<ParsedPath>;
   format: (pathObject: FormatInputPathObject) => Promise<string>;
   toNamespacedPath: (path: string) => Promise<string>;
-}
+};
 
 export type DialogApi = {
   browseForDirectory: (startDir: string) => Promise<string | undefined>;

@@ -6,7 +6,7 @@
 	import { userSettings } from '$lib/stores';
 
 	const dispatcher = createDispatcher();
-  	setContext("dispatcher", dispatcher);
+	setContext('dispatcher', dispatcher);
 
 	// default settings
 	userSettings.set({
@@ -19,7 +19,6 @@
 
 	dispatcher.loadSettings();
 	dispatcher.loadAppState();
-	
 </script>
 
 <div class="app" use:applyLightDarkMode={{ atDocumentRoot: true, mode: 'light' }}>

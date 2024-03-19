@@ -196,53 +196,19 @@ export const createDispatcher = () => {
 		} as Photo;
 	};
 
-	const photoCache: Record<string, Photo> = {};
-
-	// const cachePhotoCount = 3;
-
-	// const fillCache = async () => {
-	// 	const photiso = getPhotisoApi();
-	// 	const peekFiles = await photiso.peek(cachePhotoCount);
-
-	// 	for (let i = 0; i < peekFiles.length; i++) {
-	// 		const peekFile = peekFiles[i];
-	// 		if (!photoCache[peekFile]) {
-	// 			photoCache[peekFile] = await loadPhoto(peekFile);
-	// 			console.log('dispatcher.fillCache-added:', peekFile);
-	// 		}
-	// 	}
-	// };
-
-	const loadCachedPhoto = async (file: string): Promise<Photo> => {
-		const result = photoCache[file];
-		if (result) {
-			console.log('dispatcher.loadCachedPhoto-HIT:', file);
-			delete photoCache[file];
-			return result;
-		}
-
-		console.log('dispatcher.loadCachedPhoto-MISS:', file);
-		return loadPhoto(file);
-	};
-
 	const nextPhoto = async () => {
 		const photiso = getPhotisoApi();
 		const file = await photiso.next();
 		if (file) {
 			console.log('dispatcher.nextPhoto-file:', file);
 
-			const newPhoto = await loadCachedPhoto(file);
+			const newPhoto = await loadPhoto(file);
 
 			photo.set(newPhoto);
 			toRelativeDirectory.set(await getDefaultDestinationRelativeDirectory(newPhoto));
 			toFileName.set(await getDefaultDestinationFileName(newPhoto));
 			suggestedToFileNames.set(getSuggestedFilesNames(newPhoto));
 
-			// await the next photo and any UI updates
-			// before asking to fill the cache
-			// setTimeout(() => {
-			// 	fillCache();
-			// }, 10000);
 		} else {
 			console.log('dispatcher.nextPhoto-none found.');
 			photo.set(undefined);

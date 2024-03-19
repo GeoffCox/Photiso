@@ -1,27 +1,58 @@
 <script lang="ts">
 	import type { ActionHistoryItem } from '../types';
-	import { Button, Dialog, Link } from '@geoffcox/sterling-svelte';
+	import { Button, Dialog } from '@geoffcox/sterling-svelte';
 	import { actionHistory, fromDirectory, toRootDirectory } from './stores';
-	import FileHierarchy from './FileHierarchy.svelte';
 	import { getDispatcher } from './dispatcher';
 	import { DateTime } from 'luxon';
 	import { getPathApi } from './ipc.apis';
+	import type { PathApi } from './ipc.types';
+	import CopyFileIcon from './icons/CopyFileIcon.svelte';
+	import MoveFileIcon from './icons/MoveFileIcon.svelte';
+	import UndoIcon from './icons/UndoIcon.svelte';
+	import { onMount } from 'svelte';
 
 	export let open = false;
 
-	const getRelativeHistoryItem = async (item: ActionHistoryItem) => {
-		const path = getPathApi();
-
-		const fromPath = await path.parse(item.from);
-		const toPath = await path.parse(item.to);
-
-		return {
+	const getRelativeHistoryItem = async (
+		path: PathApi,
+		item: ActionHistoryItem
+	): Promise<ActionHistoryItem> => {
+		const result = {
 			createdEpoch: item.createdEpoch,
 			action: item.action,
-			from: $fromDirectory ? await path.relative($fromDirectory, fromPath.base) : fromPath,
-			to: $toRootDirectory ? await path.relative($toRootDirectory, toPath.base) : toPath
+			from: $fromDirectory ? await path.relative($fromDirectory, item.from) : item.from,
+			to: $toRootDirectory ? await path.relative($toRootDirectory, item.to) : item.to
 		};
+
+		console.log('getRelativeHistoryItem', item, result);
+		return result;
 	};
+
+	const getRelativeActionHistory = async (items: ActionHistoryItem[]) => {
+		if (items) {
+			const path = getPathApi();
+			return Promise.all(items.map(async (item) => await getRelativeHistoryItem(path, item)));
+		}
+		return [];
+	};
+
+	let relativeActionHistory: ActionHistoryItem[] = [];
+
+	$: {
+		getRelativeActionHistory($actionHistory).then((value) => (relativeActionHistory = value));
+	}
+
+	let baseDateTime = DateTime.now();
+
+	onMount(() => {
+		const timeout = setInterval(() => {
+			baseDateTime = DateTime.now();
+		}, 1000);
+
+		return () => {
+			clearInterval(timeout);
+		};
+	});
 
 	const dispatcher = getDispatcher();
 	const onUndo = (historyItem: ActionHistoryItem) => {
@@ -36,23 +67,45 @@
 <Dialog bind:open on:close on:cancel>
 	<div slot="title">Copy/Move History</div>
 	<div class="body" slot="body">
-		{#each $actionHistory as historyItem}
-			<div class="history-item">
-				<div class="ago">{DateTime.fromMillis(historyItem.createdEpoch).toRelative()}</div>
-				<div class="from"><FileHierarchy path={historyItem.from} /></div>
-				<div class="between-label">to</div>
-				<div class="to"><FileHierarchy path={historyItem.to} /></div>
-				<div class="undo">
-					<Link href="#" on:click={() => onUndo(historyItem)}
-						>{historyItem.action === 'move' ? ' undo move' : 'undo copy'}</Link
-					>
-				</div>
+		{#if relativeActionHistory.length === 0}
+			<div class="empty-history">o_0 Nothing left to undo here.</div>
+		{:else}
+			<div class="history">
+				<div></div>
+				<div></div>
+				<div class="column-header">{$fromDirectory}</div>
+				<div></div>
+				<div class="column-header">{$toRootDirectory}</div>
+				<div></div>
+				<div></div>
+				{#each relativeActionHistory as historyItem}
+					{#if historyItem.action === 'copy'}
+						<CopyFileIcon width="24" height="24" />
+						<div>copied</div>
+					{:else}
+						<MoveFileIcon width="24" height="24" />
+						<div>moved</div>
+					{/if}
+					<div class="from">{historyItem.from}</div>
+					<div class="between-label">to</div>
+					<div class="to">{historyItem.to}</div>
+					<div class="ago">
+						{DateTime.fromMillis(historyItem.createdEpoch).toRelative({ base: baseDateTime })}
+					</div>
+					<div class="undo-action">
+						{#if historyItem.action === 'move'}
+							<Button on:click={() => onUndo(historyItem)}
+								><UndoIcon width="24px" height="24px" />Undo</Button
+							>
+						{/if}
+					</div>
+				{/each}
 			</div>
-		{/each}
+		{/if}
 	</div>
 	<div slot="footer">
 		<div class="actions">
-			<Button on:click={onOk}>OK</Button>
+			<Button on:click={onOk}>Close</Button>
 		</div>
 	</div>
 </Dialog>
@@ -67,24 +120,35 @@
 		max-height: 500px;
 	}
 
-	.history-item {
+	.empty-history {
+		font-size: 1.5em;
+	}
+
+	.history {
 		display: grid;
-		grid-template-columns: auto auto auto auto;
+		grid-template-columns: auto auto auto auto auto auto auto;
 		grid-template-rows: auto;
-		align-items: flex-start;
+		align-items: center;
+		justify-content: flex-start;
+		justify-items: flex-start;
 		padding: 1em;
-		border-bottom: 1px solid grey;
-		border-top: 1px solid transparent;
 		column-gap: 1em;
+		row-gap: 0.5em;
 	}
 
-	.history-item:first-child {
-		border-top: 1px solid grey;
+	.column-header {
+		color: gray;
+		font-size: 0.8em;
 	}
 
-	.between-label,
-	.undo {
-		align-self: center;
+	.between-label {
+		color: grey;
+	}
+
+	.ago {
+		color: gray;
+		font-size: 0.8em;
+		font-variant: small-caps;
 	}
 
 	.from :global(.file),
