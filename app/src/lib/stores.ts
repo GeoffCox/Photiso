@@ -1,6 +1,6 @@
 import { derived, writable, type Readable} from 'svelte/store';
 import { getPathApi, getPhotisoApi } from './ipc.apis';
-import type { Photo, UserSettings } from '../types';
+import type { ActionHistoryItem, Photo, UserSettings } from '../types';
 
 // ----- App Stores ----- //
 export const userSettings = writable<UserSettings>();
@@ -29,6 +29,9 @@ export const recentToDirectories = writable<string[]>([]);
 
 /** The list of file names to suggest  */
 export const suggestedToFileNames = writable<string[]>([]);
+
+/** The most recent to least recent history of actions taken */
+export const actionHistory = writable<ActionHistoryItem[]>([]);
 
 /** The full path to the destination directory **/
 export const toDirectory: Readable<string | undefined> = derived(

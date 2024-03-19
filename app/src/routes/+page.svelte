@@ -23,13 +23,14 @@
 
 	import FromDirectoryPicker from '$lib/FromDirectoryPicker.svelte';
 	import ToRootDirectoryPicker from '$lib/ToRootDirectoryPicker.svelte';
-	
+
 	import PhotoImage from '$lib/PhotoImage.svelte';
 	import PhotoInfoCard from '$lib/PhotoInfoCard.svelte';
 
 	import ToRelativeDirectoryPicker from '$lib/ToRelativeDirectoryPicker.svelte';
 	import ToFileNamePicker from '$lib/ToFileNamePicker.svelte';
 	import PhotoActions from '$lib/PhotoActions.svelte';
+	import LastActionBanner from '$lib/LastActionBanner.svelte';
 
 	const dispatcher = getDispatcher();
 
@@ -79,8 +80,6 @@
 
 	const fromDirectoryKey = 'fromDirectory';
 	const toRootDirectoryKey = 'toRootDirectory';
-	const photoKey = 'photo';
-	const infoKey = 'info';
 
 	$: starting = visualState === 'starting';
 	$: started = visualState === 'started';
@@ -91,62 +90,61 @@
 		<div class="header">
 			<Header />
 		</div>
-		<div class="split-view">
-			{#if starting || started}
+		{#if starting || started}
+			<div
+				class="display-from-directory"
+				in:send={{ key: fromDirectoryKey }}
+				out:receive={{ key: fromDirectoryKey }}
+			>
+				<FromDirectoryPicker readonly />
+			</div>
+			<div
+				class="display-to-root-directory"
+				in:send={{ key: toRootDirectoryKey }}
+				out:receive={{ key: toRootDirectoryKey }}
+				on:introend={onStarted}
+			>
+				<ToRootDirectoryPicker readonly />
+			</div>
+			<div class="organize-view">
+				<div class="from-pane" in:fly={{ x: '-50%', duration: 2000, easing: quintOut }}>
+					<PhotoImage photo={$photo} />
+					<PhotoInfoCard photo={$photo} />
+				</div>
+				<div class="to-pane" in:fly={{ x: '150%', duration: 2000, easing: quintOut }}>
+					<ToRelativeDirectoryPicker />
+					<div>
+						<ToFileNamePicker />
+					</div>
+				</div>
+			</div>
+			<div class="actions">
+				<PhotoActions />
+				<LastActionBanner />
+			</div>
+		{:else}
+			<div />
+			<div />
+			<div class="welcome-view">
 				<div
-					class="display-from-directory"
+					class="from-directory"
 					in:send={{ key: fromDirectoryKey }}
 					out:receive={{ key: fromDirectoryKey }}
 				>
-					<FromDirectoryPicker readonly />
+					<FromDirectoryPicker />
 				</div>
 				<div
-					class="display-to-root-directory"
+					class="to-root-directory"
 					in:send={{ key: toRootDirectoryKey }}
 					out:receive={{ key: toRootDirectoryKey }}
-					on:introend={onStarted}
 				>
-					<ToRootDirectoryPicker readonly />
+					<ToRootDirectoryPicker />
 				</div>
-				<div class="organize-view">
-					<div class="from-pane" in:fly={{ x: '-50%', duration: 2000, easing: quintOut }}>
-						<PhotoImage photo={$photo} />
-						<PhotoInfoCard photo={$photo} />
-					</div>
-					<div class="to-pane" in:fly={{ x: '150%', duration: 2000, easing: quintOut }}>
-						<ToRelativeDirectoryPicker />
-						<div>
-							<ToFileNamePicker />
-						</div>
-					</div>
+				<div out:fade={{ duration: 500 }} class="start-action">
+					<Button on:click={onStart} variant="colorful">Start Organizing</Button>
 				</div>
-				<div class="actions">
-					<PhotoActions />
-				</div>
-			{:else}
-				<div />
-				<div />
-				<div class="welcome-view">
-					<div
-						class="from-directory"
-						in:send={{ key: fromDirectoryKey }}
-						out:receive={{ key: fromDirectoryKey }}
-					>
-						<FromDirectoryPicker />
-					</div>
-					<div
-						class="to-root-directory"
-						in:send={{ key: toRootDirectoryKey }}
-						out:receive={{ key: toRootDirectoryKey }}
-					>
-						<ToRootDirectoryPicker />
-					</div>
-					<div out:fade={{ duration: 500 }} class="start-action">
-						<Button on:click={onStart}>Start Organizing</Button>
-					</div>
-				</div>
-			{/if}
-		</div>
+			</div>
+		{/if}
 	</div>
 </div>
 
@@ -160,21 +158,18 @@
 		padding: 1em;
 	}
 
+	/* ----- Split view  ----- */
+
 	.main-view {
 		display: grid;
 		column-gap: 1em;
-		grid-template-columns: 1fr;
-		grid-template-rows: auto 1fr;
+		grid-template-columns: 1fr 1fr;
+		grid-template-rows: auto auto 1fr auto;
+		grid-template-areas: 'header header' 'displayFromDir displayToRootDir' 'organize organize' 'actions actions';
 	}
 
-	/* ----- Split view  ----- */
-
-	.split-view {
-		display: grid;
-		column-gap: 1em;
-		grid-template-columns: 1fr 1fr;
-		grid-template-rows: auto 1fr auto;
-		grid-template-areas: 'displayFromDir displayToRootDir' 'organize organize' 'actions actions';
+	.header {
+		grid-area: header;
 	}
 
 	.display-from-directory {
@@ -190,7 +185,6 @@
 		justify-self: center;
 	}
 
-
 	/* ----- Welcome view  ----- */
 	.welcome-view {
 		display: grid;
@@ -201,6 +195,7 @@
 		align-items: center;
 		grid-template-areas: 'fromDir toRootDir' 'startAction startAction';
 		grid-area: organize;
+		row-gap: 2em;
 	}
 
 	.from-directory {
@@ -216,6 +211,7 @@
 	.start-action {
 		grid-area: startAction;
 		justify-self: center;
+		font-size: 1.5em;
 	}
 
 	/* ----- Split view  ----- */

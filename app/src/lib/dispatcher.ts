@@ -9,6 +9,7 @@ import {
 	toFileName,
 	suggestedToFileNames,
 	toRootDirectory,
+	actionHistory
 } from './stores';
 import { getContext } from 'svelte';
 import { getPathApi, getPhotisoApi } from './ipc.apis';
@@ -278,6 +279,15 @@ export const createDispatcher = () => {
 		if (photiso && $photo && $toFile) {
 			mruRelativeToDirectory = $toRelativeDirectory;
 			await photiso.copy($photo.file, $toFile);
+			actionHistory.set([
+				{
+					action: 'copy',
+					createdEpoch: Date.now(),
+					from: $photo.file,
+					to: $toFile
+				},
+				...get(actionHistory)
+			]);
 			mruRelativeToDirectory && pushRecentDirectory(mruRelativeToDirectory);
 			saveAppState();
 		}
@@ -288,6 +298,15 @@ export const createDispatcher = () => {
 		if (photiso && $photo && $toFile) {
 			mruRelativeToDirectory = $toRelativeDirectory;
 			await photiso.move($photo.file, $toFile);
+			actionHistory.set([
+				{
+					action: 'move',
+					createdEpoch: Date.now(),
+					from: $photo.file,
+					to: $toFile
+				},
+				...get(actionHistory)
+			]);
 			mruRelativeToDirectory && pushRecentDirectory(mruRelativeToDirectory);
 			saveAppState();
 		}
@@ -296,6 +315,20 @@ export const createDispatcher = () => {
 	const pushRecentDirectory = (dir: string) => {
 		if (!$recentDirectories.includes(dir)) {
 			recentToDirectories.set([dir, ...$recentDirectories.slice(0, 4)]);
+		}
+	};
+
+	const undoAction = async (createdEpoch: number) => {
+		const photiso = getPhotisoApi();
+
+		const history = get(actionHistory);
+		if (history.length > 0) {
+			const historyItem = history.find(i => i.createdEpoch === createdEpoch);
+			if (historyItem) {
+				await photiso.move(historyItem.to, historyItem.from);
+				console.log('dispatcher.undoLastAction-moved:', historyItem.to, ' to ', historyItem.from);
+				actionHistory.set(history.filter(i => i.createdEpoch !== createdEpoch));
+			}
 		}
 	};
 
@@ -310,7 +343,8 @@ export const createDispatcher = () => {
 		loadPhotoSrc,
 		copyPhoto,
 		movePhoto,
-		pushRecentDirectory
+		pushRecentDirectory,
+		undoAction
 	};
 };
 

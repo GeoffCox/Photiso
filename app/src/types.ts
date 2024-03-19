@@ -24,6 +24,13 @@ export type Photo = Omit<PhotoInfo, 'dateTaken'> & {
 	src?: string;
 };
 
+export type ActionHistoryItem = {
+	action: 'copy' | 'move';
+	createdEpoch: number;
+	from: string;
+	to: string;
+};
+
 
 export type MruAppState = {
 	fromDirectory?: string;
