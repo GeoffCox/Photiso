@@ -12,8 +12,7 @@
 		noConflictToFileName,
 		toRootDirectory,
 		photo,
-		recentToDirectories,
-		suggestedToFileNames,
+		recentRelativeDirectories,
 		fromDirectory,
 		userSettings
 	} from '$lib/stores';
@@ -54,8 +53,7 @@
 	$: console.log('$toFile', $toFile);
 	$: console.log('$noConflictDestinationFileName', $noConflictToFileName);
 
-	$: console.log('$recentDirectories', $recentToDirectories);
-	$: console.log('$suggestedDestinationFileNames', $suggestedToFileNames);
+	$: console.log('$recentDirectories', $recentRelativeDirectories);
 
 	// ----- Visual Handlers -----//
 

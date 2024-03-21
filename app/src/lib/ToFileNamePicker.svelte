@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Label, Input, Button, Link } from '@geoffcox/sterling-svelte';
 
-	import { photo, toFileName, noConflictToFileName, suggestedToFileNames } from './stores'
+	import { photo, toFileName, noConflictToFileName } from './stores'
 
 	const onFileNameSuggestion = (suggestion: string) => {
 		toFileName.set(suggestion);
@@ -24,15 +24,6 @@
 		</Label>
 		<div class="extension">{$photo?.path.ext}</div>
 	</div>
-	<div class="suggested-file-names">
-		<Label text="Suggestions" for="dummy_id">
-			{#each $suggestedToFileNames as fileSuggestion}
-				<Button on:click={() => onFileNameSuggestion(fileSuggestion)} variant="tool square"
-					>{fileSuggestion}</Button
-				>
-			{/each}
-		</Label>
-	</div>
 </div>
 
 <style>
@@ -52,19 +43,6 @@
 
 	.extension {
 		padding-bottom: 0.625em;
-	}
-
-	.suggested-file-names {
-		font-size: 0.8em;
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		justify-self: flex-start;
-		margin-left: 2em;
-	}
-
-	.suggested-file-names :global(button) {
-		justify-content: flex-start;
 	}
 
 	.overwrite-message {

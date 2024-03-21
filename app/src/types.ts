@@ -9,11 +9,10 @@ export type PhotisoWindow = Window &
 	};
 
 export type UserSettings = {
-	fileAction: 'move' | 'copy';
-	defaultDirectoryName: 'date' | 'previous' | 'empty';
-	defaultDirectoryDateFormat: 'year' | 'year-month' | 'year-month-day';
-	defaultFileName: 'datetime' | 'original' | 'empty';
-	defaultFileNamePrefix: string;
+	enableDefaultDirectoryName: boolean;
+	defaultDirectoryName: string;
+	enableDefaultFileName: boolean;
+	defaultFileName: string;
 };
 
 export type Photo = Omit<PhotoInfo, 'dateTaken'> & {
@@ -31,9 +30,15 @@ export type ActionHistoryItem = {
 	to: string;
 };
 
+export type RecentDirectory = {
+	dir: string;
+	favorite?: boolean;
+	lastUsedEpoch: number;
+};
+
 
 export type MruAppState = {
 	fromDirectory?: string;
 	toRootDirectory?: string;
-	recentDirectories: string[];
+	recentDirectories: RecentDirectory[];
 }

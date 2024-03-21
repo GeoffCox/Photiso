@@ -2,7 +2,9 @@
 	import { Label, Input, Button } from '@geoffcox/sterling-svelte';
 	import { getDialogApi, getPathApi } from './ipc.apis';
 
-    import { toRootDirectory, toRelativeDirectory, recentToDirectories} from './stores'
+	import { toRootDirectory, toRelativeDirectory, recentRelativeDirectories } from './stores';
+	import RecentDirectoryPill from './RecentDirectoryPill.svelte';
+	import type { RecentDirectory } from '../types';
 
 	const onBrowse = async () => {
 		const path = getPathApi();
@@ -17,8 +19,8 @@
 		}
 	};
 
-	const onRecentDirectory = (recentDir: string) => {
-		toRelativeDirectory.set(recentDir);
+	const onRecentDirectory = (recentDir: RecentDirectory) => {
+		toRelativeDirectory.set(recentDir.dir);
 	};
 </script>
 
@@ -29,13 +31,11 @@
 		</Label>
 		<Button on:click={onBrowse}>...</Button>
 	</div>
-	{#if $recentToDirectories && $recentToDirectories.length > 0}
+	{#if $recentRelativeDirectories && $recentRelativeDirectories.length > 0}
 		<div class="recent-directories">
 			<Label text="Recent" for="dummy_id">
-				{#each $recentToDirectories as recentDir}
-					<Button on:click={() => onRecentDirectory(recentDir)} variant="tool square"
-						>{recentDir}</Button
-					>
+				{#each $recentRelativeDirectories as recentDir}
+					<RecentDirectoryPill recentDirectory={recentDir} on:click={() => onRecentDirectory(recentDir)} />
 				{/each}
 			</Label>
 		</div>

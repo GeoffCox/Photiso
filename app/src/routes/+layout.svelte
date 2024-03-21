@@ -2,23 +2,25 @@
 	import '@geoffcox/sterling-svelte/css/sterling.css';
 	import { applyLightDarkMode } from '@geoffcox/sterling-svelte';
 	import { createDispatcher } from '$lib/dispatcher';
-	import { setContext } from 'svelte';
+	import { onMount, setContext } from 'svelte';
 	import { userSettings } from '$lib/stores';
+	import { defaultUserSettings } from '../constants';
 
 	const dispatcher = createDispatcher();
 	setContext('dispatcher', dispatcher);
 
 	// default settings
-	userSettings.set({
-		fileAction: 'move',
-		defaultDirectoryName: 'previous',
-		defaultDirectoryDateFormat: 'year-month',
-		defaultFileName: 'datetime',
-		defaultFileNamePrefix: 'IMG_'
-	});
+	userSettings.set(defaultUserSettings);
 
 	dispatcher.loadSettings();
 	dispatcher.loadAppState();
+
+	onMount(() => {
+		return () => {
+			dispatcher.saveSettings();
+			dispatcher.saveAppState();
+		}
+	})
 </script>
 
 <div class="app" use:applyLightDarkMode={{ atDocumentRoot: true, mode: 'light' }}>

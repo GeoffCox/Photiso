@@ -1,19 +1,18 @@
 import { get, type Unsubscriber } from 'svelte/store';
 import {
-	recentToDirectories,
+	recentRelativeDirectories,
 	fromDirectory,
 	toFile,
 	userSettings,
 	toRelativeDirectory,
 	photo,
 	toFileName,
-	suggestedToFileNames,
 	toRootDirectory,
 	actionHistory
 } from './stores';
 import { getContext } from 'svelte';
 import { getPathApi, getPhotisoApi } from './ipc.apis';
-import type { MruAppState, Photo, UserSettings } from '../types';
+import type { MruAppState, Photo, RecentDirectory, UserSettings } from '../types';
 import { DateTime } from 'luxon';
 
 const userSettingsStorageKey = 'photiso.UserSettings';
@@ -28,7 +27,6 @@ export const createDispatcher = () => {
 
 	let $toRelativeDirectory: string | undefined;
 	let $toFile: string | undefined;
-	let $recentDirectories: string[];
 	let $userSettings: UserSettings | undefined;
 
 	unsubscribers.push(fromDirectory.subscribe((value) => ($fromDirectory = value)));
@@ -37,7 +35,6 @@ export const createDispatcher = () => {
 
 	unsubscribers.push(toRelativeDirectory.subscribe((value) => ($toRelativeDirectory = value)));
 	unsubscribers.push(toFile.subscribe((value) => ($toFile = value)));
-	unsubscribers.push(recentToDirectories.subscribe((value) => ($recentDirectories = value)));
 	unsubscribers.push(userSettings.subscribe((value) => ($userSettings = value)));
 
 	const dispose = () => {
@@ -53,7 +50,9 @@ export const createDispatcher = () => {
 		if (localStorage) {
 			const settingsText = window.localStorage.getItem(userSettingsStorageKey);
 			if (settingsText) {
-				userSettings.set(JSON.parse(settingsText) as UserSettings);
+				const newSettings = JSON.parse(settingsText) as UserSettings;
+				userSettings.set(newSettings);
+				console.log('dispatcher.loadSettings:', newSettings);
 			}
 		}
 	};
@@ -62,6 +61,7 @@ export const createDispatcher = () => {
 		const localStorage = globalThis.window?.localStorage;
 		if (localStorage && $userSettings) {
 			localStorage.setItem(userSettingsStorageKey, JSON.stringify($userSettings));
+			console.log('dispatcher.saveSettings', $userSettings);
 		}
 	};
 
@@ -75,7 +75,7 @@ export const createDispatcher = () => {
 				const mruAppState = JSON.parse(stateText) as MruAppState;
 				fromDirectory.set(mruAppState.fromDirectory);
 				toRootDirectory.set(mruAppState.toRootDirectory);
-				recentToDirectories.set(mruAppState.recentDirectories);
+				recentRelativeDirectories.set(mruAppState.recentDirectories);
 
 				console.log('dispatcher.loadAppState:', mruAppState);
 			}
@@ -88,7 +88,7 @@ export const createDispatcher = () => {
 			const mruAppState: MruAppState = {
 				fromDirectory: get(fromDirectory),
 				toRootDirectory: get(toRootDirectory),
-				recentDirectories: get(recentToDirectories)
+				recentDirectories: get(recentRelativeDirectories)
 			};
 			localStorage.setItem(appStateStorageKey, JSON.stringify(mruAppState));
 			console.log('dispatcher.saveAppState:', mruAppState);
@@ -100,75 +100,26 @@ export const createDispatcher = () => {
 	let mruRelativeToDirectory: string | undefined = undefined;
 
 	const getDefaultDestinationRelativeDirectory = async (photo: Photo) => {
-		const path = getPathApi();
-
-		if ($userSettings) {
-			switch ($userSettings.defaultDirectoryName) {
-				case 'date':
-					if (photo.dateTaken) {
-						switch ($userSettings.defaultDirectoryDateFormat) {
-							case 'year':
-								return photo.dateTaken.toFormat('yyyy');
-								return;
-							case 'year-month': {
-								const year = photo.dateTaken.toFormat('yyyy');
-								const month = photo.dateTaken.toFormat('MM');
-								return await path.join(year, month);
-							}
-							case 'year-month-day': {
-								const year = photo.dateTaken.toFormat('yyyy');
-								const month = photo.dateTaken.toFormat('MM');
-								const day = photo.dateTaken.toFormat('dd');
-								return await path.join(year, month, day);
-							}
-						}
-					}
-					break;
-				case 'previous': {
-					return mruRelativeToDirectory;
-				}
-				case 'empty': {
-					return '';
-				}
+		if ($userSettings?.enableDefaultDirectoryName) {
+			if (photo?.dateTaken && $userSettings?.defaultDirectoryName) {
+				return photo.dateTaken.toFormat($userSettings.defaultDirectoryName);
 			}
+			
+			return '';
 		}
+		
+		return mruRelativeToDirectory;
 	};
 
-	const getDateTimeFileName = (photo: Photo) => {
-		if (photo && photo.dateTaken) {
-			const prefix = $userSettings?.defaultFileNamePrefix ?? '';
-			return `${prefix}${photo.dateTaken.toFormat('yyyy-MM-dd_HH-mm-ss-u')}`;
-		}
-
-		return undefined;
-	};
-
-	const getDefaultDestinationFileName = (photo: Photo) => {
-		if ($userSettings) {
-			switch ($userSettings?.defaultFileName) {
-				case 'datetime':
-					if (photo.dateTaken) {
-						return getDateTimeFileName(photo);
-					}
-					break;
-				case 'empty':
-					return '';
-				default:
-				case 'original':
-					return $photo?.path.name;
+	const getDefaultToFileName = (photo: Photo) => {
+		if ($userSettings?.enableDefaultFileName) {
+			if (photo?.dateTaken && $userSettings?.defaultFileName) {
+				return photo.dateTaken.toFormat($userSettings.defaultFileName);
 			}
+			return '';
 		}
-		return undefined;
-	};
-
-	const getSuggestedFilesNames = (photo: Photo) => {
-		if (photo) {
-			return [
-				photo?.path.name, // original file name
-				getDateTimeFileName(photo)
-			].filter(Boolean) as string[];
-		}
-		return [];
+		
+		return photo.path.name;
 	};
 
 	// ----- load photo ----- //
@@ -206,9 +157,7 @@ export const createDispatcher = () => {
 
 			photo.set(newPhoto);
 			toRelativeDirectory.set(await getDefaultDestinationRelativeDirectory(newPhoto));
-			toFileName.set(await getDefaultDestinationFileName(newPhoto));
-			suggestedToFileNames.set(getSuggestedFilesNames(newPhoto));
-
+			toFileName.set(await getDefaultToFileName(newPhoto));
 		} else {
 			console.log('dispatcher.nextPhoto-none found.');
 			photo.set(undefined);
@@ -235,9 +184,43 @@ export const createDispatcher = () => {
 			photo.set(undefined);
 			toRelativeDirectory.set(undefined);
 			toFileName.set(undefined);
-			suggestedToFileNames.set([]);
+			//TODO: clear recent and favorite directories once app picks up where it left off
 			await nextPhoto();
 		}
+	};
+
+	const maxRecentDirectories = 5;
+
+	const pushRecentDirectory = (dir: string) => {
+		recentRelativeDirectories.update((dirs) => {
+			const index = dirs.findIndex((d) => d.dir === dir);
+			if (index === 0) {
+				dirs[0].lastUsedEpoch = Date.now();
+			} else if (index !== -1) {
+				const found = dirs.splice(index, 1)[0];
+				found.lastUsedEpoch = Date.now();
+				dirs.unshift(found);
+			} else {
+				dirs.unshift({
+					dir,
+					lastUsedEpoch: Date.now()
+				});
+			}
+
+			return dirs.slice(0, maxRecentDirectories);
+		});
+	};
+
+	const favoriteRecentDirectory = (dir: RecentDirectory, favorite: boolean) => {
+		recentRelativeDirectories.update((dirs) => {
+			const found = dirs.find((d) => d.dir === dir.dir);
+			if (found) {
+				found.favorite = favorite;
+			}
+			return dirs.slice();
+		});
+
+		saveAppState();
 	};
 
 	const copyPhoto = async () => {
@@ -278,22 +261,16 @@ export const createDispatcher = () => {
 		}
 	};
 
-	const pushRecentDirectory = (dir: string) => {
-		if (!$recentDirectories.includes(dir)) {
-			recentToDirectories.set([dir, ...$recentDirectories.slice(0, 4)]);
-		}
-	};
-
 	const undoAction = async (createdEpoch: number) => {
 		const photiso = getPhotisoApi();
 
 		const history = get(actionHistory);
 		if (history.length > 0) {
-			const historyItem = history.find(i => i.createdEpoch === createdEpoch);
+			const historyItem = history.find((i) => i.createdEpoch === createdEpoch);
 			if (historyItem) {
 				await photiso.move(historyItem.to, historyItem.from);
 				console.log('dispatcher.undoLastAction-moved:', historyItem.to, ' to ', historyItem.from);
-				actionHistory.set(history.filter(i => i.createdEpoch !== createdEpoch));
+				actionHistory.set(history.filter((i) => i.createdEpoch !== createdEpoch));
 			}
 		}
 	};
@@ -309,7 +286,7 @@ export const createDispatcher = () => {
 		loadPhotoSrc,
 		copyPhoto,
 		movePhoto,
-		pushRecentDirectory,
+		favoriteRecentDirectory,
 		undoAction
 	};
 };
