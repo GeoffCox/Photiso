@@ -8,9 +8,9 @@
 		toDirectory,
 		toFile,
 		toFileName,
-		toRelativeDirectory,
+		relativeToDirectory,
 		noConflictToFileName,
-		toRootDirectory,
+		rootToDirectory,
 		photo,
 		recentRelativeDirectories,
 		fromDirectory,
@@ -19,17 +19,21 @@
 	import { getDispatcher } from '$lib/dispatcher';
 
 	import Header from './Header.svelte';
+	import NoPhotoIcon from '$lib/icons/NoPhotoIcon.svelte';
 
 	import FromDirectoryPicker from '$lib/FromDirectoryPicker.svelte';
-	import ToRootDirectoryPicker from '$lib/ToRootDirectoryPicker.svelte';
+	import RootToDirectoryPicker from '$lib/RootToDirectoryPicker.svelte';
 
 	import PhotoImage from '$lib/PhotoImage.svelte';
 	import PhotoInfoCard from '$lib/PhotoInfoCard.svelte';
 
-	import ToRelativeDirectoryPicker from '$lib/ToRelativeDirectoryPicker.svelte';
+	import RelativeToDirectoryPicker from '$lib/RelativeToDirectoryPicker.svelte';
 	import ToFileNamePicker from '$lib/ToFileNamePicker.svelte';
 	import PhotoActions from '$lib/PhotoActions.svelte';
 	import LastActionBanner from '$lib/LastActionBanner.svelte';
+	import WelcomeView from '$lib/WelcomeView.svelte';
+	import OrganizeView from '$lib/OrganizeView.svelte';
+	import DoneView from '$lib/DoneView.svelte';
 
 	const dispatcher = getDispatcher();
 
@@ -42,11 +46,11 @@
 	$: console.log('$userSettings', $userSettings);
 
 	$: console.log('$fromDirectory', $fromDirectory);
-	$: console.log('$toRootDirectory', $toRootDirectory);
+	$: console.log('$rootToDirectory', $rootToDirectory);
 
 	$: console.log('$photo', $photo);
 
-	$: console.log('$toRelativeDirectory', $toRelativeDirectory);
+	$: console.log('$relativeToDirectory', $relativeToDirectory);
 	$: console.log('$toFileName', $toFileName);
 
 	$: console.log('$toDirectory', $toDirectory);
@@ -67,17 +71,35 @@
 		visualState = 'started';
 	};
 
+	const onRestart = () => {
+		visualState = 'welcome';
+	}
+
+	$: {
+		if (visualState === 'started' && $photo !== undefined) {
+			visualState = 'ready';
+		}
+	}
+
+	$: {
+		if (visualState !== 'welcome' && visualState !== 'starting' && $photo === undefined) {
+			visualState = 'done';
+		}
+	}
+
 	$: console.log(visualState);
 
 	// ----- Animation -----//
 
-	const [send, receive] = crossfade({
+	const crossfadeParts = crossfade({
 		duration: 1500,
 		easing: quintOut
 	});
 
+	const [send, receive] = crossfadeParts;
+
 	const fromDirectoryKey = 'fromDirectory';
-	const toRootDirectoryKey = 'toRootDirectory';
+	const rootToDirectoryKey = 'rootToDirectory';
 
 	$: starting = visualState === 'starting';
 	$: started = visualState === 'started';
@@ -88,59 +110,17 @@
 		<div class="header">
 			<Header />
 		</div>
-		{#if starting || started}
-			<div
-				class="display-from-directory"
-				in:send={{ key: fromDirectoryKey }}
-				out:receive={{ key: fromDirectoryKey }}
-			>
-				<FromDirectoryPicker readonly />
+		{#if starting || started || visualState === 'ready'}
+			<div class="organize-step">
+				<OrganizeView crossFadeParts={[send, receive]} on:introend={onStarted} />
 			</div>
-			<div
-				class="display-to-root-directory"
-				in:send={{ key: toRootDirectoryKey }}
-				out:receive={{ key: toRootDirectoryKey }}
-				on:introend={onStarted}
-			>
-				<ToRootDirectoryPicker readonly />
+		{:else if visualState === 'welcome'}
+			<div class="welcome-step">
+				<WelcomeView on:start={onStart} crossFadeParts={[send, receive]} />
 			</div>
-			<div class="organize-view">
-				<div class="from-pane" in:fly={{ x: '-50%', duration: 2000, easing: quintOut }}>
-					<PhotoImage photo={$photo} />
-					<PhotoInfoCard photo={$photo} />
-				</div>
-				<div class="to-pane" in:fly={{ x: '150%', duration: 2000, easing: quintOut }}>
-					<ToRelativeDirectoryPicker />
-					<div>
-						<ToFileNamePicker />
-					</div>
-				</div>
-			</div>
-			<div class="actions">
-				<PhotoActions />
-				<LastActionBanner />
-			</div>
-		{:else}
-			<div />
-			<div />
-			<div class="welcome-view">
-				<div
-					class="from-directory"
-					in:send={{ key: fromDirectoryKey }}
-					out:receive={{ key: fromDirectoryKey }}
-				>
-					<FromDirectoryPicker />
-				</div>
-				<div
-					class="to-root-directory"
-					in:send={{ key: toRootDirectoryKey }}
-					out:receive={{ key: toRootDirectoryKey }}
-				>
-					<ToRootDirectoryPicker />
-				</div>
-				<div out:fade={{ duration: 500 }} class="start-action">
-					<Button on:click={onStart} variant="colorful">Start Organizing</Button>
-				</div>
+		{:else if visualState === 'done'}
+			<div class="done-step">
+				<DoneView on:restart={onRestart} />
 			</div>
 		{/if}
 	</div>
@@ -161,93 +141,19 @@
 	.main-view {
 		display: grid;
 		column-gap: 1em;
-		grid-template-columns: 1fr 1fr;
-		grid-template-rows: auto auto 1fr auto;
-		grid-template-areas: 'header header' 'displayFromDir displayToRootDir' 'organize organize' 'actions actions';
+		grid-template-columns: 1fr;
+		grid-template-rows: auto 1fr;
+		grid-template-areas: 'header' 'organize';
+		justify-items: stretch;
 	}
 
 	.header {
 		grid-area: header;
 	}
 
-	.display-from-directory {
-		grid-area: displayFromDir;
-	}
-
-	.display-to-root-directory {
-		grid-area: displayToRootDir;
-	}
-
-	.actions {
-		grid-area: actions;
-		justify-self: center;
-	}
-
-	/* ----- Welcome view  ----- */
-	.welcome-view {
-		display: grid;
-		column-gap: 1em;
-		grid-template-columns: 1fr 1fr;
-		grid-template-rows: auto auto;
-		align-content: center;
-		align-items: center;
-		grid-template-areas: 'fromDir toRootDir' 'startAction startAction';
+	.welcome-step,
+	.organize-step,
+	.done-step {
 		grid-area: organize;
-		row-gap: 2em;
-	}
-
-	.from-directory {
-		grid-area: fromDir;
-		align-self: center;
-	}
-
-	.to-root-directory {
-		grid-area: toRootDir;
-		align-self: center;
-	}
-
-	.start-action {
-		grid-area: startAction;
-		justify-self: center;
-		font-size: 1.5em;
-	}
-
-	/* ----- Split view  ----- */
-
-	.organize-view {
-		display: grid;
-		column-gap: 1em;
-		grid-template-columns: 1fr 1fr;
-		grid-template-rows: 1fr auto;
-		grid-template-areas: 'fromPane toPane';
-		grid-area: organize;
-		align-self: center;
-	}
-
-	.from-pane {
-		grid-area: fromPane;
-		padding: 2em;
-		display: grid;
-		grid-template-rows: auto auto;
-		justify-content: stretch;
-		justify-items: center;
-		align-content: flex-start;
-		align-items: flex-start;
-		row-gap: 1em;
-	}
-
-	.from-pane :global(:nth-child(2)) {
-		align-self: flex-start;
-		justify-self: center;
-	}
-
-	.to-pane {
-		grid-area: toPane;
-		display: grid;
-		grid-template-rows: auto;
-		row-gap: 2em;
-		padding: 2em;
-		justify-items: stretch;
-		align-content: flex-start;
 	}
 </style>

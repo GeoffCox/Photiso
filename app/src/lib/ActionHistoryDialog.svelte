@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ActionHistoryItem } from '../types';
 	import { Button, Dialog } from '@geoffcox/sterling-svelte';
-	import { actionHistory, fromDirectory, toRootDirectory } from './stores';
+	import { actionHistory, fromDirectory, rootToDirectory } from './stores';
 	import { getDispatcher } from './dispatcher';
 	import { DateTime } from 'luxon';
 	import { getPathApi } from './ipc.apis';
@@ -21,7 +21,7 @@
 			createdEpoch: item.createdEpoch,
 			action: item.action,
 			from: $fromDirectory ? await path.relative($fromDirectory, item.from) : item.from,
-			to: $toRootDirectory ? await path.relative($toRootDirectory, item.to) : item.to
+			to: $rootToDirectory ? await path.relative($rootToDirectory, item.to) : item.to
 		};
 
 		console.log('getRelativeHistoryItem', item, result);
@@ -75,7 +75,7 @@
 				<div></div>
 				<div class="column-header">{$fromDirectory}</div>
 				<div></div>
-				<div class="column-header">{$toRootDirectory}</div>
+				<div class="column-header">{$rootToDirectory}</div>
 				<div></div>
 				<div></div>
 				{#each relativeActionHistory as historyItem}

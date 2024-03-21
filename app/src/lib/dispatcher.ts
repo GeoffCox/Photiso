@@ -4,15 +4,21 @@ import {
 	fromDirectory,
 	toFile,
 	userSettings,
-	toRelativeDirectory,
+	relativeToDirectory,
 	photo,
 	toFileName,
-	toRootDirectory,
+	rootToDirectory,
 	actionHistory
 } from './stores';
 import { getContext } from 'svelte';
 import { getPathApi, getPhotisoApi } from './ipc.apis';
-import type { MruAppState, Photo, RecentDirectory, UserSettings } from '../types';
+import type {
+	ActionHistoryItem,
+	MruAppState,
+	Photo,
+	RecentDirectory,
+	UserSettings
+} from '../types';
 import { DateTime } from 'luxon';
 
 const userSettingsStorageKey = 'photiso.UserSettings';
@@ -25,7 +31,7 @@ export const createDispatcher = () => {
 
 	let $photo: Photo | undefined;
 
-	let $toRelativeDirectory: string | undefined;
+	let $relativeToDirectory: string | undefined;
 	let $toFile: string | undefined;
 	let $userSettings: UserSettings | undefined;
 
@@ -33,7 +39,7 @@ export const createDispatcher = () => {
 
 	unsubscribers.push(photo.subscribe((value) => ($photo = value)));
 
-	unsubscribers.push(toRelativeDirectory.subscribe((value) => ($toRelativeDirectory = value)));
+	unsubscribers.push(relativeToDirectory.subscribe((value) => ($relativeToDirectory = value)));
 	unsubscribers.push(toFile.subscribe((value) => ($toFile = value)));
 	unsubscribers.push(userSettings.subscribe((value) => ($userSettings = value)));
 
@@ -74,7 +80,7 @@ export const createDispatcher = () => {
 			if (stateText) {
 				const mruAppState = JSON.parse(stateText) as MruAppState;
 				fromDirectory.set(mruAppState.fromDirectory);
-				toRootDirectory.set(mruAppState.toRootDirectory);
+				rootToDirectory.set(mruAppState.rootToDirectory);
 				recentRelativeDirectories.set(mruAppState.recentDirectories);
 
 				console.log('dispatcher.loadAppState:', mruAppState);
@@ -87,7 +93,7 @@ export const createDispatcher = () => {
 		if (localStorage && $userSettings) {
 			const mruAppState: MruAppState = {
 				fromDirectory: get(fromDirectory),
-				toRootDirectory: get(toRootDirectory),
+				rootToDirectory: get(rootToDirectory),
 				recentDirectories: get(recentRelativeDirectories)
 			};
 			localStorage.setItem(appStateStorageKey, JSON.stringify(mruAppState));
@@ -104,10 +110,10 @@ export const createDispatcher = () => {
 			if (photo?.dateTaken && $userSettings?.defaultDirectoryName) {
 				return photo.dateTaken.toFormat($userSettings.defaultDirectoryName);
 			}
-			
+
 			return '';
 		}
-		
+
 		return mruRelativeToDirectory;
 	};
 
@@ -118,7 +124,7 @@ export const createDispatcher = () => {
 			}
 			return '';
 		}
-		
+
 		return photo.path.name;
 	};
 
@@ -156,7 +162,7 @@ export const createDispatcher = () => {
 			const newPhoto = await loadPhoto(file);
 
 			photo.set(newPhoto);
-			toRelativeDirectory.set(await getDefaultDestinationRelativeDirectory(newPhoto));
+			relativeToDirectory.set(await getDefaultDestinationRelativeDirectory(newPhoto));
 			toFileName.set(await getDefaultToFileName(newPhoto));
 		} else {
 			console.log('dispatcher.nextPhoto-none found.');
@@ -171,9 +177,11 @@ export const createDispatcher = () => {
 			}
 
 			const photiso = getPhotisoApi();
-
 			const src = await photiso.getSrc($photo.file);
-			photo.set({ ...$photo, src });
+
+			photo.update((p) => {
+				return { ...p, src } as Photo;
+			});
 		}
 	};
 
@@ -182,7 +190,7 @@ export const createDispatcher = () => {
 		if (photiso && $fromDirectory) {
 			await photiso.start($fromDirectory);
 			photo.set(undefined);
-			toRelativeDirectory.set(undefined);
+			relativeToDirectory.set(undefined);
 			toFileName.set(undefined);
 			//TODO: clear recent and favorite directories once app picks up where it left off
 			await nextPhoto();
@@ -203,11 +211,22 @@ export const createDispatcher = () => {
 			} else {
 				dirs.unshift({
 					dir,
+					firstUsedEpoch: Date.now(),
 					lastUsedEpoch: Date.now()
 				});
 			}
 
-			return dirs.slice(0, maxRecentDirectories);
+			return dirs.toSorted((a, b) => {
+				if (a.favorite === b.favorite) {
+					return b.lastUsedEpoch - a.lastUsedEpoch;
+				} else if (a.favorite) {
+					return -1;
+				} else if (b.favorite) {
+					return 1;
+				}
+		
+				return 0;
+			}).slice(0, maxRecentDirectories);
 		});
 	};
 
@@ -226,17 +245,21 @@ export const createDispatcher = () => {
 	const copyPhoto = async () => {
 		const photiso = getPhotisoApi();
 		if (photiso && $photo && $toFile) {
-			mruRelativeToDirectory = $toRelativeDirectory;
+			mruRelativeToDirectory = $relativeToDirectory;
 			await photiso.copy($photo.file, $toFile);
-			actionHistory.set([
-				{
-					action: 'copy',
-					createdEpoch: Date.now(),
-					from: $photo.file,
-					to: $toFile
-				},
-				...get(actionHistory)
-			]);
+
+			actionHistory.update((h) => {
+				return [
+					{
+						action: 'copy',
+						createdEpoch: Date.now(),
+						from: $photo!.file,
+						to: $toFile
+					},
+					...h
+				] as ActionHistoryItem[];
+			});
+
 			mruRelativeToDirectory && pushRecentDirectory(mruRelativeToDirectory);
 			saveAppState();
 		}
@@ -245,17 +268,20 @@ export const createDispatcher = () => {
 	const movePhoto = async () => {
 		const photiso = getPhotisoApi();
 		if (photiso && $photo && $toFile) {
-			mruRelativeToDirectory = $toRelativeDirectory;
+			mruRelativeToDirectory = $relativeToDirectory;
 			await photiso.move($photo.file, $toFile);
-			actionHistory.set([
-				{
-					action: 'move',
-					createdEpoch: Date.now(),
-					from: $photo.file,
-					to: $toFile
-				},
-				...get(actionHistory)
-			]);
+
+			actionHistory.update((h) => {
+				return [
+					{
+						action: 'copy',
+						createdEpoch: Date.now(),
+						from: $photo!.file,
+						to: $toFile
+					},
+					...h
+				] as ActionHistoryItem[];
+			});
 			mruRelativeToDirectory && pushRecentDirectory(mruRelativeToDirectory);
 			saveAppState();
 		}
@@ -270,7 +296,9 @@ export const createDispatcher = () => {
 			if (historyItem) {
 				await photiso.move(historyItem.to, historyItem.from);
 				console.log('dispatcher.undoLastAction-moved:', historyItem.to, ' to ', historyItem.from);
-				actionHistory.set(history.filter((i) => i.createdEpoch !== createdEpoch));
+				actionHistory.update((h) => {
+					return h.filter((i) => i.createdEpoch !== createdEpoch);
+				});
 			}
 		}
 	};

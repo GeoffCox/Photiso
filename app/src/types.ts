@@ -33,12 +33,13 @@ export type ActionHistoryItem = {
 export type RecentDirectory = {
 	dir: string;
 	favorite?: boolean;
+	firstUsedEpoch: number;
 	lastUsedEpoch: number;
 };
 
 
 export type MruAppState = {
 	fromDirectory?: string;
-	toRootDirectory?: string;
+	rootToDirectory?: string;
 	recentDirectories: RecentDirectory[];
 }

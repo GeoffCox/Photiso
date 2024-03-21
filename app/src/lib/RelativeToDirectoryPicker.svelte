@@ -2,40 +2,55 @@
 	import { Label, Input, Button } from '@geoffcox/sterling-svelte';
 	import { getDialogApi, getPathApi } from './ipc.apis';
 
-	import { toRootDirectory, toRelativeDirectory, recentRelativeDirectories } from './stores';
+	import { rootToDirectory, relativeToDirectory, recentRelativeDirectories } from './stores';
 	import RecentDirectoryPill from './RecentDirectoryPill.svelte';
 	import type { RecentDirectory } from '../types';
 
 	const onBrowse = async () => {
 		const path = getPathApi();
 		const dialog = getDialogApi();
-		if (path && dialog && $toRootDirectory) {
-			const currentDir = await path.join($toRootDirectory, $toRelativeDirectory || '');
+		if (path && dialog && $rootToDirectory) {
+			const currentDir = await path.join($rootToDirectory, $relativeToDirectory || '');
 			const selectedDir = await dialog!.browseForDirectory(currentDir);
 
 			if (selectedDir) {
-				toRelativeDirectory.set(await path.relative($toRootDirectory, selectedDir));
+				relativeToDirectory.set(await path.relative($rootToDirectory, selectedDir));
 			}
 		}
 	};
 
 	const onRecentDirectory = (recentDir: RecentDirectory) => {
-		toRelativeDirectory.set(recentDir.dir);
+		relativeToDirectory.set(recentDir.dir);
 	};
+
+	$: sortedRecentDirectories = $recentRelativeDirectories.toSorted((a, b) => {
+		if (a.favorite === b.favorite) {
+			return b.firstUsedEpoch - a.firstUsedEpoch;
+		} else if (a.favorite) {
+			return -1;
+		} else if (b.favorite) {
+			return 1;
+		}
+
+		return 0;
+	});
 </script>
 
 <div class="to-directory-picker">
 	<div class="relative-directory">
 		<Label text="In Directory">
-			<Input bind:value={$toRelativeDirectory} />
+			<Input bind:value={$relativeToDirectory} />
 		</Label>
 		<Button on:click={onBrowse}>...</Button>
 	</div>
 	{#if $recentRelativeDirectories && $recentRelativeDirectories.length > 0}
 		<div class="recent-directories">
 			<Label text="Recent" for="dummy_id">
-				{#each $recentRelativeDirectories as recentDir}
-					<RecentDirectoryPill recentDirectory={recentDir} on:click={() => onRecentDirectory(recentDir)} />
+				{#each sortedRecentDirectories as recentDir}
+					<RecentDirectoryPill
+						recentDirectory={recentDir}
+						on:click={() => onRecentDirectory(recentDir)}
+					/>
 				{/each}
 			</Label>
 		</div>

@@ -1,6 +1,6 @@
 <script>
 	import { Button, Link } from '@geoffcox/sterling-svelte';
-	import { actionHistory, fromDirectory, toRootDirectory } from './stores';
+	import { actionHistory, fromDirectory, rootToDirectory } from './stores';
 	import { getDispatcher } from './dispatcher';
 	import ActionHistoryDialog from '$lib/ActionHistoryDialog.svelte';
 	import { getPathApi } from './ipc.apis';
@@ -14,13 +14,15 @@
 	let relativeTo = '';
 
 	$: {
-		$fromDirectory && historyItem &&
-		path.relative($fromDirectory, historyItem.from).then(value => relativeFrom = value );
+		$fromDirectory &&
+			historyItem &&
+			path.relative($fromDirectory, historyItem.from).then((value) => (relativeFrom = value));
 	}
 
 	$: {
-		$toRootDirectory && historyItem &&
-		path.relative($toRootDirectory, historyItem.to).then(value => relativeTo = value );
+		$rootToDirectory &&
+			historyItem &&
+			path.relative($rootToDirectory, historyItem.to).then((value) => (relativeTo = value));
 	}
 
 	const dispatcher = getDispatcher();
@@ -45,8 +47,8 @@
 			<div class="undo-action">
 				<Button on:click={onUndo}>Undo</Button>
 			</div>
-			<Button on:click={() => (historyDialogOpen = true)}>History</Button>
 		{/if}
+		<Button on:click={() => (historyDialogOpen = true)}>History</Button>
 	</div>
 {/if}
 <ActionHistoryDialog bind:open={historyDialogOpen} />

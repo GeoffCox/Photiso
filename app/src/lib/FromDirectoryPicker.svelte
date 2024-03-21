@@ -15,7 +15,7 @@
 		}
 	};
 
-	const labelText = 'Directory of unorganized photos';
+	const labelText = 'From folder';
 
 </script>
 

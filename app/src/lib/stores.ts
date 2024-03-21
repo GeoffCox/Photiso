@@ -16,10 +16,10 @@ export const photo = writable<Photo | undefined>();
 // ----- Destination Stores ----- //
 
 /** The directory that is the destination for organized photos */
-export const toRootDirectory = writable<string | undefined>();
+export const rootToDirectory = writable<string | undefined>();
 
 /** The directory relative to organizedDirectory to put the current photo */
-export const toRelativeDirectory = writable<string | undefined>();
+export const relativeToDirectory = writable<string | undefined>();
 
 /** The file name to use when moving/copying the current photo */
 export const toFileName = writable<string | undefined>();
@@ -32,7 +32,7 @@ export const actionHistory = writable<ActionHistoryItem[]>([]);
 
 /** The full path to the destination directory **/
 export const toDirectory: Readable<string | undefined> = derived(
-	[toRootDirectory, toRelativeDirectory],
+	[rootToDirectory, relativeToDirectory],
 	([$organizedDirectory, $destinationRelativeDirectory], set) => {
 		const path = getPathApi();
 		if (path && $organizedDirectory) {
