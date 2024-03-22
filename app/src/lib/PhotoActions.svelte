@@ -20,18 +20,18 @@
 
 	const onCopy = async () => {
 		await tick();
-		dispatcher.copyPhoto();
-		dispatcher.nextPhoto();
+		await dispatcher.copyPhoto();
+		await dispatcher.nextPhoto();
 	};
 
 	const onMove = async () => {
 		await tick();
-		dispatcher.movePhoto();
-		dispatcher.nextPhoto();
+		await dispatcher.movePhoto();
+		await dispatcher.nextPhoto();
 	};
 
 	const onSkip = async () => {
-		dispatcher.nextPhoto();
+		await dispatcher.nextPhoto();
 	};
 </script>
 

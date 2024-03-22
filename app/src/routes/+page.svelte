@@ -18,7 +18,7 @@
 	} from '$lib/stores';
 	import { getDispatcher } from '$lib/dispatcher';
 
-	import Header from './Header.svelte';
+	import Header from '$lib/Header.svelte';
 	import NoPhotoIcon from '$lib/icons/NoPhotoIcon.svelte';
 
 	import FromDirectoryPicker from '$lib/FromDirectoryPicker.svelte';

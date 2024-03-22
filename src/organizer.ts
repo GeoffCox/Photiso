@@ -92,13 +92,20 @@ export const createOrganizer = (): PhotisoApi => {
 
   const fileExists = async (file: string): Promise<boolean> => {
     try {
-      return file !== undefined && file.length > 0 && (await fspromises.stat(file)) !== undefined;
+      if (file) {
+        const stat = await fspromises.stat(file);
+        console.log('fileExists', file, stat?.isFile);
+        return !!stat?.isFile;
+      }
     } catch (_e) {}
     return false;
   };
 
   const getNoOverwriteSuffix = async (dest: string) => {
+
+    console.log('getNoOverwriteSuffix', dest);
     if (!(await fileExists(dest))) {
+      console.log('getNoOverwriteSuffix', dest, ' does not exist');
       return undefined;
     }
 
@@ -122,6 +129,7 @@ export const createOrganizer = (): PhotisoApi => {
       throw new Error("Number of destination file collisions exceeded 1000.");
     }
 
+    console.log('getNoOverwriteSuffix', dest, ' exists. suffix:', suffix);
     return suffix;
   };
 

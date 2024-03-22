@@ -122,7 +122,6 @@ export const createDispatcher = () => {
 			if (photo?.dateTaken && $userSettings?.defaultFileName) {
 				return photo.dateTaken.toFormat($userSettings.defaultFileName);
 			}
-			return '';
 		}
 
 		return photo.path.name;

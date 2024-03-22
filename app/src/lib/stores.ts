@@ -1,4 +1,4 @@
-import { derived, writable, type Readable} from 'svelte/store';
+import { derived, writable, type Readable } from 'svelte/store';
 import { getPathApi, getPhotisoApi } from './ipc.apis';
 import type { ActionHistoryItem, Photo, RecentDirectory, UserSettings } from '../types';
 
@@ -62,10 +62,12 @@ export const toFile: Readable<string | undefined> = derived(
 
 /** The destination file name that does not cause an overwrite conflict **/
 export const noConflictToFileName: Readable<string | undefined> = derived(
-	[toFile, toFileName],
+	[toFile, toFileName, photo],
 	([$destinationFile, $destinationFileName], set) => {
+		console.log('noConflictToFileName triggered');
 		const photiso = getPhotisoApi();
 		if (photiso && $destinationFile) {
+			console.log('noConflictToFileName check:', $destinationFile);
 			photiso.getNoOverwriteSuffix($destinationFile).then((suffix) => {
 				suffix ? set(`${$destinationFileName}${suffix}`) : set(undefined);
 			});
