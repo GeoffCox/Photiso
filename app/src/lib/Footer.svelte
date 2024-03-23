@@ -1,41 +1,34 @@
 <script lang="ts">
 	import { Button } from '@geoffcox/sterling-svelte';
-	import { actionHistory } from './stores';
+
+	import { actionHistory, fromDirectory, rootToDirectory } from './stores';
 	import { getDispatcher } from './dispatcher';
-	import ActionHistoryDialog from '$lib/ActionHistoryDialog.svelte';
-	import { getPathApi } from './ipc.apis';
-	import ActionHistoryLine from './ActionHistoryItem.svelte';
-	import type { ActionHistoryItem } from '../types';
+
+	import ActionHistoryDialog from './ActionHistoryDialog.svelte';
+	import ActionHistoryList from './ActionHistoryList.svelte';
+	import type { EventHandler } from 'svelte/elements';
 
 	const dispatcher = getDispatcher();
 
-	$: lastAction = $actionHistory[$actionHistory.length - 1];
-
-	const path = getPathApi();
-
-	let relativeLastAction: ActionHistoryItem | undefined = undefined;
-	$: {
-		if (lastAction) {
-			dispatcher.getRelativeActionHistoryItem(lastAction).then((Value) => relativeLastAction);
-		}
-	}
+	$: lastAction = $actionHistory[0];
 
 	let historyDialogOpen = false;
 
-	const onUndo = async () => {
-		lastAction && (await dispatcher.undoAction(lastAction.createdEpoch));
-	};
+	// const onUndo : EventHandler<ActionHistoryItem> = async (event) => {
+	// 	const undoAction = event.detail;
+	// 	undoAction && (await dispatcher.undoAction(undoAction.createdEpoch));
+	// };
 </script>
 
 <div class="footer">
-	{#if relativeLastAction}
+	{#if lastAction}
 		<div class="last-action">
-			<ActionHistoryLine item={relativeLastAction} />
-			<div class="undo-action">
-				{#if lastAction?.action == 'move'}
-					<Button on:click={onUndo}>Undo</Button>
-				{/if}
-			</div>
+			<ActionHistoryList
+				history={[lastAction]}
+				fromDirectory={$fromDirectory}
+				rootToDirectory={$rootToDirectory}
+				showHeader={false}
+			/>
 		</div>
 	{/if}
 	<div class="actions">

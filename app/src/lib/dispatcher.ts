@@ -278,7 +278,7 @@ export const createDispatcher = () => {
 			actionHistory.update((h) => {
 				return [
 					{
-						action: 'copy',
+						action: 'move',
 						createdEpoch: Date.now(),
 						from: $photo!.file,
 						to: $toFile
