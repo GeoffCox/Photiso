@@ -2,11 +2,13 @@
 	import { Button } from '@geoffcox/sterling-svelte';
 	import NoMorePhotosIcon from './icons/NoMorePhotosIcon.svelte';
 	import { createEventDispatcher } from 'svelte';
+	import { getDispatcher } from './dispatcher';
+	import { appStep } from './stores';
 
-    const eventDispatcher = createEventDispatcher();
+	const dispatcher = getDispatcher();
 
     const onRestart = () => {
-        eventDispatcher('restart');
+        appStep.set('welcome');
     }
 </script>
 

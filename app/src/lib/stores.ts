@@ -1,9 +1,14 @@
 import { derived, writable, type Readable } from 'svelte/store';
 import { getPathApi, getPhotisoApi } from './ipc.apis';
-import type { ActionHistoryItem, Photo, RecentDirectory, UserSettings } from '../types';
+import { type AppStep, type ActionHistoryItem, type Photo, type RecentDirectory, type UserSettings, type AppStatus } from '../types';
 
 // ----- App Stores ----- //
+export const appStep = writable<AppStep>('welcome');
+
+export const appStatus = writable<AppStatus>('idle');
+
 export const userSettings = writable<UserSettings>();
+
 
 // ----- Source Photo Stores ----- //
 

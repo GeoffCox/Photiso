@@ -1,9 +1,7 @@
 <script lang="ts">
 	import type { Photo } from '../types';
-	import NoPhotoIcon from './icons/NoPhotoIcon.svelte';
 
-	export let photo: Photo | undefined;
-
+	export let photo : Photo | undefined;
 
 	$: rotation = photo?.rotation ?? 0;
 	$: rotate = rotation === 0 ? 0 : 360 - rotation;
@@ -13,7 +11,7 @@
 	{#if photo?.thumbnailSrc}
 		<img alt="current" src={photo.thumbnailSrc} />
 	{:else}
-		<NoPhotoIcon class="no-photo" />
+		<div class="no-photo" />
 	{/if}
 </div>
 
@@ -25,22 +23,14 @@
 		place-content: stretch;
 		place-items: stretch;
 		overflow: hidden;
-	}
-
-	.photo :global(.no-photo) {
-		object-fit: contain;
-		width: 100%;
-		height: auto;
-		max-width: 400px;
-		max-height: 400px;
+		width: 400px;
+		height: 400px;
 	}
 
 	.photo img {
 		object-fit: contain;
 		width: 100%;
 		height: 100%;
-		max-width: 400px;
-		max-height: 400px;
 		transform-origin: 50% 50%;
 		transform: rotate(var(--rotate));
 	}

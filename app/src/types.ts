@@ -8,6 +8,11 @@ export type PhotisoWindow = Window &
 		dialogApi: DialogApi;
 	};
 
+export type AppStep = 'welcome' | 'organizing' | 'done';
+
+export type AppStatus = 'idle' | 'loading' | 'busy';
+
+
 export type UserSettings = {
 	enableDefaultDirectoryName: boolean;
 	defaultDirectoryName: string;
@@ -37,9 +42,8 @@ export type RecentDirectory = {
 	lastUsedEpoch: number;
 };
 
-
 export type MruAppState = {
 	fromDirectory?: string;
 	rootToDirectory?: string;
 	recentDirectories: RecentDirectory[];
-}
+};

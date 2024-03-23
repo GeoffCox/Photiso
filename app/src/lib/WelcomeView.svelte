@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { quintOut } from 'svelte/easing';
 	import { crossfade, fade, fly } from 'svelte/transition';
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher, onMount, tick } from 'svelte';
 
 	import { Button } from '@geoffcox/sterling-svelte';
 
 	import { getDispatcher } from './dispatcher';
-	import { userSettings } from './stores';
-	
+	import { appStatus, appStep, photo, userSettings } from './stores';
+
 	import FromDirectoryPicker from '$lib/FromDirectoryPicker.svelte';
 	import RootToDirectoryPicker from '$lib/RootToDirectoryPicker.svelte';
 	import WelcomeIcon from './icons/WelcomeIcon.svelte';
@@ -15,6 +15,7 @@
 	import SettingsDialog from '$lib/SettingsDialog.svelte';
 
 	const eventDispatcher = createEventDispatcher();
+	const dispatcher = getDispatcher();
 
 	export let crossFadeParts: ReturnType<typeof crossfade>;
 
@@ -24,11 +25,16 @@
 	const fromDirectoryKey = 'fromDirectory';
 	const rootToDirectoryKey = 'rootToDirectory';
 
-	const onStart = () => {
-		eventDispatcher('start');
+	const onStart = async () => {
+		appStatus.set('loading');
+		await tick();
+		await dispatcher.startOrganizing();
+		await dispatcher.nextPhoto();
+		await tick();
+		appStatus.set('idle');
+		appStep.set($photo ? 'organizing' : 'done');
 	};
 
-	const dispatcher = getDispatcher();
 	let settingsDialogOpen = false;
 
 	const onCloseSettingsDialog = async () => {
@@ -39,6 +45,9 @@
 <div class="welcome-view" out:fly={{ y: '-150%', duration: 2000, easing: quintOut }}>
 	<div class="intro">
 		<WelcomeIcon width="300px" height="auto" color="aliceblue" />
+		{#if $appStatus === 'loading'}
+			<div>Loading photos...</div>
+		{/if}
 		<p>Photiso helps you organize your photos.</p>
 		<p>
 			For each photo in the <b>From folder</b>, you choose where to put it in the
@@ -118,7 +127,6 @@
 		justify-self: center;
 		align-items: center;
 		align-content: center;
-		
 	}
 
 	.actions :global(button:first-child) {

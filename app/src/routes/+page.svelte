@@ -2,8 +2,6 @@
 	import { crossfade, fade, fly } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
 
-	import { Button } from '@geoffcox/sterling-svelte';
-
 	import {
 		toDirectory,
 		toFile,
@@ -14,35 +12,62 @@
 		photo,
 		recentRelativeDirectories,
 		fromDirectory,
-		userSettings
+		userSettings,
+		appStep,
+		appStatus
 	} from '$lib/stores';
 	import { getDispatcher } from '$lib/dispatcher';
 
 	import Header from '$lib/Header.svelte';
-	import NoPhotoIcon from '$lib/icons/NoPhotoIcon.svelte';
-
-	import FromDirectoryPicker from '$lib/FromDirectoryPicker.svelte';
-	import RootToDirectoryPicker from '$lib/RootToDirectoryPicker.svelte';
-
-	import PhotoImage from '$lib/PhotoImage.svelte';
-	import PhotoInfoCard from '$lib/PhotoInfoCard.svelte';
-
-	import RelativeToDirectoryPicker from '$lib/RelativeToDirectoryPicker.svelte';
-	import ToFileNamePicker from '$lib/ToFileNamePicker.svelte';
-	import PhotoActions from '$lib/PhotoActions.svelte';
-	import LastActionBanner from '$lib/LastActionBanner.svelte';
 	import WelcomeView from '$lib/WelcomeView.svelte';
 	import OrganizeView from '$lib/OrganizeView.svelte';
 	import DoneView from '$lib/DoneView.svelte';
+	import { Button } from '@geoffcox/sterling-svelte';
+	import Footer from '$lib/Footer.svelte';
 
 	const dispatcher = getDispatcher();
 
 	// ----- State ----- //
-	let visualState: 'welcome' | 'starting' | 'started' | 'loading' | 'ready' | 'acting' | 'done' =
-		'welcome';
+	// welcome -> starting
+	// starting -> ready
+	// starting -> done
+	// ready -> acting
+	// acting -> loading
+	// loading -> ready
+	// loading -> done
+
+	const onNextStep = () => {
+		switch ($appStep) {
+			case 'welcome':
+				appStep.set('organizing');
+				break;
+			case 'organizing':
+				appStep.set('done');
+				break;
+			case 'done':
+				appStep.set('welcome');
+				break;
+		}
+	};
+
+	const onNextStatus = () => {
+		switch ($appStatus) {
+			case 'idle':
+				appStatus.set('loading');
+				break;
+			case 'loading':
+				appStatus.set('busy');
+				break;
+			case 'busy':
+				appStatus.set('idle');
+				break;
+		}
+	};
 
 	// ----- Store Logging ----- //
 
+	$: console.log('$appStep', $appStep);
+	$: console.log('$appStatus', $appStatus);
 	$: console.log('$userSettings', $userSettings);
 
 	$: console.log('$fromDirectory', $fromDirectory);
@@ -62,32 +87,30 @@
 	// ----- Visual Handlers -----//
 
 	const onStart = () => {
-		visualState = 'starting';
-		dispatcher.startOrganizing();
-		dispatcher.saveAppState();
+		// visualState = 'starting';
+		// dispatcher.startOrganizing();
+		// dispatcher.saveAppState();
 	};
 
 	const onStarted = () => {
-		visualState = 'started';
+		// visualState = 'started';
 	};
 
 	const onRestart = () => {
-		visualState = 'welcome';
-	}
+		// visualState = 'welcome';
+	};
 
-	$: {
-		if (visualState === 'started' && $photo !== undefined) {
-			visualState = 'ready';
-		}
-	}
+	// $: {
+	// 	if (visualState === 'started' && $photo !== undefined) {
+	// 		visualState = 'ready';
+	// 	}
+	// }
 
-	$: {
-		if (visualState !== 'welcome' && visualState !== 'starting' && $photo === undefined) {
-			visualState = 'done';
-		}
-	}
-
-	$: console.log(visualState);
+	// $: {
+	// 	if (visualState !== 'welcome' && visualState !== 'starting' && $photo === undefined) {
+	// 		visualState = 'done';
+	// 	}
+	// }
 
 	// ----- Animation -----//
 
@@ -100,29 +123,31 @@
 
 	const fromDirectoryKey = 'fromDirectory';
 	const rootToDirectoryKey = 'rootToDirectory';
-
-	$: starting = visualState === 'starting';
-	$: started = visualState === 'started';
 </script>
 
 <div class="root">
 	<div class="main-view">
 		<div class="header">
+			<Button on:click={onNextStep}>Next Step</Button>
+			<Button on:click={onNextStatus}>Next Status</Button>
 			<Header />
 		</div>
-		{#if starting || started || visualState === 'ready'}
-			<div class="organize-step">
-				<OrganizeView crossFadeParts={[send, receive]} on:introend={onStarted} />
-			</div>
-		{:else if visualState === 'welcome'}
+		{#if $appStep === 'welcome'}
 			<div class="welcome-step">
 				<WelcomeView on:start={onStart} crossFadeParts={[send, receive]} />
 			</div>
-		{:else if visualState === 'done'}
+		{:else if $appStep === 'organizing'}
+			<div class="organize-step">
+				<OrganizeView crossFadeParts={[send, receive]} on:introend={onStarted} />
+			</div>
+		{:else if $appStep === 'done'}
 			<div class="done-step">
 				<DoneView on:restart={onRestart} />
 			</div>
 		{/if}
+		<div class="footer">
+			<Footer />
+		</div>
 	</div>
 </div>
 
@@ -142,8 +167,8 @@
 		display: grid;
 		column-gap: 1em;
 		grid-template-columns: 1fr;
-		grid-template-rows: auto 1fr;
-		grid-template-areas: 'header' 'organize';
+		grid-template-rows: auto 1fr auto;
+		grid-template-areas: 'header' 'organize' 'footer';
 		justify-items: stretch;
 	}
 
@@ -155,5 +180,10 @@
 	.organize-step,
 	.done-step {
 		grid-area: organize;
+	}
+
+	.footer {
+		grid-area: footer;
+		min-height: 3em;
 	}
 </style>

@@ -4,7 +4,7 @@
 
 	import { photo } from './stores';
 
-    import FromDirectoryPicker from '$lib/FromDirectoryPicker.svelte';
+	import FromDirectoryPicker from '$lib/FromDirectoryPicker.svelte';
 	import RootToDirectoryPicker from '$lib/RootToDirectoryPicker.svelte';
 
 	import PhotoImage from '$lib/PhotoImage.svelte';
@@ -13,14 +13,13 @@
 	import RelativeToDirectoryPicker from '$lib/RelativeToDirectoryPicker.svelte';
 	import ToFileNamePicker from '$lib/ToFileNamePicker.svelte';
 	import PhotoActions from '$lib/PhotoActions.svelte';
-	import LastActionBanner from '$lib/LastActionBanner.svelte';
 
 	export let crossFadeParts: ReturnType<typeof crossfade>;
 
 	$: send = crossFadeParts[0];
 	$: receive = crossFadeParts[1];
 
-    const fromDirectoryKey = 'fromDirectory';
+	const fromDirectoryKey = 'fromDirectory';
 	const rootToDirectoryKey = 'rootToDirectory';
 </script>
 
@@ -42,7 +41,7 @@
 	</div>
 	<div class="from-pane" in:fly={{ x: '-50%', duration: 2000, easing: quintOut }}>
 		<PhotoImage photo={$photo} />
-		<PhotoInfoCard photo={$photo} />
+		<PhotoInfoCard />
 	</div>
 	<div class="to-pane" in:fly={{ x: '150%', duration: 2000, easing: quintOut }}>
 		<RelativeToDirectoryPicker />
@@ -52,7 +51,6 @@
 	</div>
 	<div class="actions" in:fly={{ y: '150%', duration: 2000, easing: quintOut }}>
 		<PhotoActions />
-		<LastActionBanner />
 	</div>
 </div>
 
@@ -66,7 +64,7 @@
 		align-self: center;
 	}
 
-    .display-from-directory {
+	.display-from-directory {
 		grid-area: displayFromDir;
 	}
 

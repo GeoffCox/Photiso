@@ -10,7 +10,7 @@ import {
 	rootToDirectory,
 	actionHistory
 } from './stores';
-import { getContext } from 'svelte';
+import { getContext, tick } from 'svelte';
 import { getPathApi, getPhotisoApi } from './ipc.apis';
 import type {
 	ActionHistoryItem,
@@ -28,6 +28,7 @@ export const createDispatcher = () => {
 	const unsubscribers: Unsubscriber[] = [];
 
 	let $fromDirectory: string | undefined;
+	let $rootToDirectory: string | undefined;
 
 	let $photo: Photo | undefined;
 
@@ -36,6 +37,7 @@ export const createDispatcher = () => {
 	let $userSettings: UserSettings | undefined;
 
 	unsubscribers.push(fromDirectory.subscribe((value) => ($fromDirectory = value)));
+	unsubscribers.push(rootToDirectory.subscribe((value) => ($rootToDirectory = value)));
 
 	unsubscribers.push(photo.subscribe((value) => ($photo = value)));
 
@@ -154,18 +156,20 @@ export const createDispatcher = () => {
 
 	const nextPhoto = async () => {
 		const photiso = getPhotisoApi();
+		await tick();
 		const file = await photiso.next();
 		if (file) {
+			
 			console.log('dispatcher.nextPhoto-file:', file);
-
 			const newPhoto = await loadPhoto(file);
-
+			
 			photo.set(newPhoto);
 			relativeToDirectory.set(await getDefaultDestinationRelativeDirectory(newPhoto));
 			toFileName.set(await getDefaultToFileName(newPhoto));
+			console.log('dispatcher.nextPhoto-loaded:', file);
 		} else {
-			console.log('dispatcher.nextPhoto-none found.');
 			photo.set(undefined);
+			console.log('dispatcher.nextPhoto-none found.');
 		}
 	};
 
@@ -191,6 +195,7 @@ export const createDispatcher = () => {
 			photo.set(undefined);
 			relativeToDirectory.set(undefined);
 			toFileName.set(undefined);
+			actionHistory.set([]);
 			//TODO: clear recent and favorite directories once app picks up where it left off
 			await nextPhoto();
 		}
@@ -302,6 +307,20 @@ export const createDispatcher = () => {
 		}
 	};
 
+	const getRelativeActionHistoryItem = async (item: ActionHistoryItem) : Promise<ActionHistoryItem> => {
+		const path = getPathApi();
+
+		const result = {
+			createdEpoch: item.createdEpoch,
+			action: item.action,
+			from: $fromDirectory ? await path.relative($fromDirectory, item.from) : item.from,
+			to: $rootToDirectory ? await path.relative($rootToDirectory, item.to) : item.to
+		};
+
+		console.log('getRelativeHistoryItem', item, result);
+		return result;
+	}
+
 	return {
 		dispose,
 		loadSettings,
@@ -314,7 +333,8 @@ export const createDispatcher = () => {
 		copyPhoto,
 		movePhoto,
 		favoriteRecentDirectory,
-		undoAction
+		undoAction,
+		getRelativeActionHistoryItem
 	};
 };
 
