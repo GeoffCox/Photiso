@@ -2,7 +2,7 @@
 	import { Label, Input, Button } from '@geoffcox/sterling-svelte';
 	import { getDialogApi, getPathApi } from './ipc.apis';
 
-	import { rootToDirectory, relativeToDirectory, recentRelativeDirectories } from './stores';
+	import { rootToDirectory, relativeToDirectory, recentRelativeDirectories, photo } from './stores';
 	import RecentDirectoryPill from './RecentDirectoryPill.svelte';
 	import type { RecentDirectory } from '../types';
 
@@ -20,7 +20,9 @@
 	};
 
 	const onRecentDirectory = (recentDir: RecentDirectory) => {
-		relativeToDirectory.set(recentDir.dir);
+		if ($photo) {
+			relativeToDirectory.set(recentDir.dir);
+		}
 	};
 
 	$: sortedRecentDirectories = $recentRelativeDirectories.toSorted((a, b) => {
@@ -39,21 +41,21 @@
 <div class="to-directory-picker">
 	<div class="relative-directory">
 		<Label text="In Directory">
-			<Input bind:value={$relativeToDirectory} />
+			<Input disabled={!$photo} bind:value={$relativeToDirectory} />
 		</Label>
-		<Button on:click={onBrowse}>...</Button>
+		<Button disabled={!$photo} on:click={onBrowse}>...</Button>
 	</div>
 	{#if $recentRelativeDirectories && $recentRelativeDirectories.length > 0}
-		<div class="recent-directories">
-			<Label text="Recent" for="dummy_id">
+		<Label text="Recent" for="dummy_id">
+			<div class="recent-directories">
 				{#each sortedRecentDirectories as recentDir}
 					<RecentDirectoryPill
 						recentDirectory={recentDir}
 						on:click={() => onRecentDirectory(recentDir)}
 					/>
 				{/each}
-			</Label>
-		</div>
+			</div>
+		</Label>
 	{/if}
 </div>
 
@@ -73,12 +75,12 @@
 	}
 
 	.recent-directories {
-		display: grid;
+		display: flex;
 		font-size: 0.8em;
-		grid-template-columns: 1fr;
-		grid-template-rows: auto;
+		flex-wrap: wrap;
 		justify-items: flex-start;
-		margin-left: 2em;
+		row-gap: 2px;
+		column-gap: 2px;
 	}
 
 	.recent-directories :global(button) {

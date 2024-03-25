@@ -42,9 +42,6 @@
 				appStep.set('organizing');
 				break;
 			case 'organizing':
-				appStep.set('done');
-				break;
-			case 'done':
 				appStep.set('welcome');
 				break;
 		}
@@ -84,34 +81,6 @@
 
 	$: console.log('$recentDirectories', $recentRelativeDirectories);
 
-	// ----- Visual Handlers -----//
-
-	const onStart = () => {
-		// visualState = 'starting';
-		// dispatcher.startOrganizing();
-		// dispatcher.saveAppState();
-	};
-
-	const onStarted = () => {
-		// visualState = 'started';
-	};
-
-	const onRestart = () => {
-		// visualState = 'welcome';
-	};
-
-	// $: {
-	// 	if (visualState === 'started' && $photo !== undefined) {
-	// 		visualState = 'ready';
-	// 	}
-	// }
-
-	// $: {
-	// 	if (visualState !== 'welcome' && visualState !== 'starting' && $photo === undefined) {
-	// 		visualState = 'done';
-	// 	}
-	// }
-
 	// ----- Animation -----//
 
 	const crossfadeParts = crossfade({
@@ -133,20 +102,18 @@
 			<Header />
 		</div>
 		{#if $appStep === 'welcome'}
-			<div class="welcome-step">
-				<WelcomeView on:start={onStart} crossFadeParts={[send, receive]} />
+			<div class="welcome-step" transition:fade={{duration:1000}}>
+				<WelcomeView crossFadeParts={[send, receive]} />
 			</div>
 		{:else if $appStep === 'organizing'}
-			<div class="organize-step">
-				<OrganizeView crossFadeParts={[send, receive]} on:introend={onStarted} />
-			</div>
-		{:else if $appStep === 'done'}
-			<div class="done-step">
-				<DoneView on:restart={onRestart} />
+			<div class="organize-step" transition:fade={{duration:500}}>
+				<OrganizeView crossFadeParts={[send, receive]} on:introend={() => {}} />
 			</div>
 		{/if}
 		<div class="footer">
+			{#if $appStep === 'organizing'}
 			<Footer />
+			{/if}
 		</div>
 	</div>
 </div>
@@ -158,7 +125,6 @@
 		grid-template-rows: 1fr;
 		place-content: stretch;
 		place-items: stretch;
-		padding: 1em;
 	}
 
 	/* ----- Split view  ----- */
@@ -180,6 +146,7 @@
 	.organize-step,
 	.done-step {
 		grid-area: organize;
+		padding: 1em;
 	}
 
 	.footer {

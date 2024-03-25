@@ -7,6 +7,7 @@
 	import CopyFileIcon from './icons/CopyFileIcon.svelte';
 	import MoveFileIcon from './icons/MoveFileIcon.svelte';
 	import SkipIcon from './icons/SkipIcon.svelte';
+	import StartOverIcon from './icons/StartOverIcon.svelte';
 
 	const dispatcher = getDispatcher();
 
@@ -27,7 +28,6 @@
 		await tick();
 		await dispatcher.nextPhoto();
 		await tick();
-		appStep.set($photo ? 'organizing' : 'done');
 		appStatus.set('idle');
 	};
 
@@ -39,7 +39,6 @@
 		await tick();
 		await dispatcher.nextPhoto();
 		await tick();
-		appStep.set($photo ? 'organizing' : 'done');
 		appStatus.set('idle');
 	};
 
@@ -50,12 +49,17 @@
 		await tick();
 		await dispatcher.nextPhoto();
 		await tick();
-		appStep.set($photo ? 'organizing' : 'done');
 		appStatus.set('idle');
 	};
+
+	const onStartOver = () => {
+		appStep.set('welcome');
+		appStatus.set('idle');
+	}
 </script>
 
 <div class="photo-actions">
+	<Button on:click={onStartOver}><StartOverIcon width="24px" height="24px"/>Start Over</Button>
 	<Button disabled={!canAct} on:click={onCopy}><CopyFileIcon width="24px" height="24px"/>Copy</Button>
 	<Button disabled={!canAct} on:click={onMove} variant="colorful"><MoveFileIcon width="24px" height="24px"/>Move</Button>
 	<Button disabled={$photo?.file === undefined} on:click={onSkip}><SkipIcon width="24px" height="24px"/>Skip</Button>
@@ -64,7 +68,7 @@
 <style>
 	.photo-actions {
 		display: grid;
-		grid-template-columns: auto auto auto;
+		grid-template-columns: auto auto auto auto;
 		column-gap: 1em;
 		padding: 0.5em;
 		font-size: 1.5em;

@@ -63,13 +63,9 @@ export const createOrganizer = (): PhotisoApi => {
 
   const next = async (): Promise<string | undefined> => {
     console.log("next");
+
     await acquireFiles();
-
-    if (filesToProcess.length > 0) {
-      return filesToProcess.shift();
-    }
-
-    return undefined;
+    return filesToProcess.length > 0 ? filesToProcess.shift() : undefined;
   };
 
   const peek = async (count: number): Promise<string[]> => {
@@ -83,7 +79,7 @@ export const createOrganizer = (): PhotisoApi => {
   };
 
   const getThumbnailSrc = async (file: string): Promise<string> => {
-    return Promise.resolve(nativeImage.createFromPath(file).resize({width: 400}).toDataURL());
+    return Promise.resolve(nativeImage.createFromPath(file).resize({ width: 400 }).toDataURL());
   };
 
   const getSrc = async (file: string): Promise<string> => {
@@ -94,7 +90,7 @@ export const createOrganizer = (): PhotisoApi => {
     try {
       if (file) {
         const stat = await fspromises.stat(file);
-        console.log('fileExists', file, stat?.isFile);
+        console.log("fileExists", file, stat?.isFile);
         return !!stat?.isFile;
       }
     } catch (_e) {}
@@ -102,10 +98,9 @@ export const createOrganizer = (): PhotisoApi => {
   };
 
   const getNoOverwriteSuffix = async (dest: string) => {
-
-    console.log('getNoOverwriteSuffix', dest);
+    console.log("getNoOverwriteSuffix", dest);
     if (!(await fileExists(dest))) {
-      console.log('getNoOverwriteSuffix', dest, ' does not exist');
+      console.log("getNoOverwriteSuffix", dest, " does not exist");
       return undefined;
     }
 
@@ -129,7 +124,7 @@ export const createOrganizer = (): PhotisoApi => {
       throw new Error("Number of destination file collisions exceeded 1000.");
     }
 
-    console.log('getNoOverwriteSuffix', dest, ' exists. suffix:', suffix);
+    console.log("getNoOverwriteSuffix", dest, " exists. suffix:", suffix);
     return suffix;
   };
 

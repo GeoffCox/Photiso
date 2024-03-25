@@ -11,7 +11,7 @@
 <div class="destination-file-name-picker">
 	<div class="file-name">
 		<Label text="File Name" message={$noConflictToFileName}>
-			<Input bind:value={$toFileName} />
+			<Input disabled={!$photo} bind:value={$toFileName} />
 			<svelte:fragment slot="message" let:message>
 				<div class="overwrite-message">
 					This file already exists. Consider changing it to <Link
@@ -22,7 +22,7 @@
 				</div>
 			</svelte:fragment>
 		</Label>
-		<div class="extension">{$photo?.path.ext}</div>
+		<div class="extension">{$photo?.path.ext || ''}</div>
 	</div>
 </div>
 

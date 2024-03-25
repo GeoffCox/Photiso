@@ -12,8 +12,9 @@
 	export let open = false;
 
 	const dispatcher = getDispatcher();
-	const onUndo = (historyItem: ActionHistoryItem) => {
-		dispatcher.undoAction(historyItem.createdEpoch);
+	const onUndo = async (event: CustomEvent<ActionHistoryItem>) => {
+		const undoAction = event.detail;
+		undoAction && (await dispatcher.undoAction(undoAction.createdEpoch));
 	};
 
 	const onOk = () => {
@@ -24,11 +25,12 @@
 <Dialog bind:open on:close on:cancel>
 	<div slot="title">Copy/Move History</div>
 	<div class="body" slot="body">
-		{#if $actionHistory.length === 0}
-			<div class="empty-history">o_0 Nothing left to undo here.</div>
-		{:else}
-			<ActionHistoryList history={$actionHistory} fromDirectory={$fromDirectory} rootToDirectory={$rootToDirectory} />
-		{/if}
+		<ActionHistoryList
+			history={$actionHistory}
+			fromDirectory={$fromDirectory}
+			rootToDirectory={$rootToDirectory}
+			on:undo={onUndo}
+		/>
 	</div>
 	<div slot="footer">
 		<div class="actions">

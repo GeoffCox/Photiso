@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { DateTime } from 'luxon';
-	import { Button } from '@geoffcox/sterling-svelte';
 
 	import type { ActionHistoryItem } from '../types';
 	import type { PathApi } from './ipc.types';
@@ -10,7 +9,6 @@
 
 	import MoveFileIcon from './icons/MoveFileIcon.svelte';
 	import CopyFileIcon from './icons/CopyFileIcon.svelte';
-	import UndoIcon from './icons/UndoIcon.svelte';
 
 	// ----- Props ----- //
 
@@ -50,20 +48,10 @@
 	let relativeHistory: RelativeActionHistoryItem[] = [];
 
 	$: {
-		getRelativeActionHistory(history).then((value) => (relativeHistory = value));
+		getRelativeActionHistory(history.toSorted((a, b) => b.createdEpoch - a.createdEpoch)).then(
+			(value) => (relativeHistory = value)
+		);
 	}
-
-	let baseDateTime = DateTime.now();
-
-	onMount(() => {
-		const timeout = setInterval(() => {
-			baseDateTime = DateTime.now();
-		}, 1000);
-
-		return () => {
-			clearInterval(timeout);
-		};
-	});
 </script>
 
 <div class="action-history">
@@ -73,8 +61,6 @@
 		<div class="column-header">{fromDirectory}</div>
 		<div></div>
 		<div class="column-header">{rootToDirectory}</div>
-		<div></div>
-		<div></div>
 	{/if}
 	{#each relativeHistory as item}
 		{#if item.action === 'copy'}
@@ -87,21 +73,13 @@
 		<div class="from">{item.relativeFrom}</div>
 		<div class="between-label">to</div>
 		<div class="to">{item.relativeTo}</div>
-		<div class="ago">
-			{DateTime.fromMillis(item.createdEpoch).toRelative({ base: baseDateTime })}
-		</div>
-		<div class="undo-action">
-			<Button disabled={item.action !== 'move'} on:click={() => onUndo(item)}
-				><UndoIcon width="24px" height="24px" />Undo</Button
-			>
-		</div>
 	{/each}
 </div>
 
 <style>
 	.action-history {
 		display: grid;
-		grid-template-columns: auto auto auto auto auto auto auto;
+		grid-template-columns: auto auto auto auto auto;
 		grid-template-rows: auto;
 		align-items: center;
 		justify-content: flex-start;

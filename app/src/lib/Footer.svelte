@@ -6,7 +6,7 @@
 
 	import ActionHistoryDialog from './ActionHistoryDialog.svelte';
 	import ActionHistoryList from './ActionHistoryList.svelte';
-	import type { EventHandler } from 'svelte/elements';
+	import { type ActionHistoryItem } from '../types';
 
 	const dispatcher = getDispatcher();
 
@@ -14,10 +14,10 @@
 
 	let historyDialogOpen = false;
 
-	// const onUndo : EventHandler<ActionHistoryItem> = async (event) => {
-	// 	const undoAction = event.detail;
-	// 	undoAction && (await dispatcher.undoAction(undoAction.createdEpoch));
-	// };
+	const onUndo = async (event : CustomEvent<ActionHistoryItem>) => {
+		const undoAction = event.detail;
+		undoAction && (await dispatcher.undoAction(undoAction.createdEpoch));
+	};
 </script>
 
 <div class="footer">
@@ -28,6 +28,7 @@
 				fromDirectory={$fromDirectory}
 				rootToDirectory={$rootToDirectory}
 				showHeader={false}
+				on:undo={onUndo}
 			/>
 		</div>
 	{/if}

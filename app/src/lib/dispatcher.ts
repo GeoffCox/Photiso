@@ -159,16 +159,17 @@ export const createDispatcher = () => {
 		await tick();
 		const file = await photiso.next();
 		if (file) {
-			
 			console.log('dispatcher.nextPhoto-file:', file);
 			const newPhoto = await loadPhoto(file);
-			
+
 			photo.set(newPhoto);
 			relativeToDirectory.set(await getDefaultDestinationRelativeDirectory(newPhoto));
 			toFileName.set(await getDefaultToFileName(newPhoto));
 			console.log('dispatcher.nextPhoto-loaded:', file);
 		} else {
 			photo.set(undefined);
+			relativeToDirectory.set(undefined);
+			toFileName.set(undefined);
 			console.log('dispatcher.nextPhoto-none found.');
 		}
 	};
@@ -201,9 +202,9 @@ export const createDispatcher = () => {
 		}
 	};
 
-	const maxRecentDirectories = 5;
+	const maxRecentDirectories = 20;
 
-	const pushRecentDirectory = (dir: string) => {
+	const addRecentDirectory = (dir: string) => {
 		recentRelativeDirectories.update((dirs) => {
 			const index = dirs.findIndex((d) => d.dir === dir);
 			if (index === 0) {
@@ -220,27 +221,37 @@ export const createDispatcher = () => {
 				});
 			}
 
-			return dirs.toSorted((a, b) => {
-				if (a.favorite === b.favorite) {
-					return b.lastUsedEpoch - a.lastUsedEpoch;
-				} else if (a.favorite) {
-					return -1;
-				} else if (b.favorite) {
-					return 1;
-				}
-		
-				return 0;
-			}).slice(0, maxRecentDirectories);
+			return dirs
+				.toSorted((a, b) => {
+					if (a.favorite === b.favorite) {
+						return b.lastUsedEpoch - a.lastUsedEpoch;
+					} else if (a.favorite) {
+						return -1;
+					} else if (b.favorite) {
+						return 1;
+					}
+
+					return 0;
+				})
+				.slice(0, maxRecentDirectories);
 		});
 	};
 
-	const favoriteRecentDirectory = (dir: RecentDirectory, favorite: boolean) => {
+	const favoriteRecentDirectory = (recentDirectory: RecentDirectory, favorite: boolean) => {
 		recentRelativeDirectories.update((dirs) => {
-			const found = dirs.find((d) => d.dir === dir.dir);
+			const found = dirs.find((d) => d.dir === recentDirectory.dir);
 			if (found) {
 				found.favorite = favorite;
 			}
 			return dirs.slice();
+		});
+
+		saveAppState();
+	};
+
+	const removeRecentDirectory = (recentDirectory: RecentDirectory) => {
+		recentRelativeDirectories.update((dirs) => {
+			return dirs.filter((d) => d.dir !== recentDirectory.dir);
 		});
 
 		saveAppState();
@@ -264,7 +275,7 @@ export const createDispatcher = () => {
 				] as ActionHistoryItem[];
 			});
 
-			mruRelativeToDirectory && pushRecentDirectory(mruRelativeToDirectory);
+			mruRelativeToDirectory && addRecentDirectory(mruRelativeToDirectory);
 			saveAppState();
 		}
 	};
@@ -286,7 +297,7 @@ export const createDispatcher = () => {
 					...h
 				] as ActionHistoryItem[];
 			});
-			mruRelativeToDirectory && pushRecentDirectory(mruRelativeToDirectory);
+			mruRelativeToDirectory && addRecentDirectory(mruRelativeToDirectory);
 			saveAppState();
 		}
 	};
@@ -307,7 +318,9 @@ export const createDispatcher = () => {
 		}
 	};
 
-	const getRelativeActionHistoryItem = async (item: ActionHistoryItem) : Promise<ActionHistoryItem> => {
+	const getRelativeActionHistoryItem = async (
+		item: ActionHistoryItem
+	): Promise<ActionHistoryItem> => {
 		const path = getPathApi();
 
 		const result = {
@@ -319,7 +332,7 @@ export const createDispatcher = () => {
 
 		console.log('getRelativeHistoryItem', item, result);
 		return result;
-	}
+	};
 
 	return {
 		dispose,
@@ -333,6 +346,7 @@ export const createDispatcher = () => {
 		copyPhoto,
 		movePhoto,
 		favoriteRecentDirectory,
+		removeRecentDirectory,
 		undoAction,
 		getRelativeActionHistoryItem
 	};

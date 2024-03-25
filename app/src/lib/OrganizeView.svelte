@@ -7,7 +7,7 @@
 	import FromDirectoryPicker from '$lib/FromDirectoryPicker.svelte';
 	import RootToDirectoryPicker from '$lib/RootToDirectoryPicker.svelte';
 
-	import PhotoImage from '$lib/PhotoImage.svelte';
+	import PhotoImage from '$lib/PhotoCard.svelte';
 	import PhotoInfoCard from '$lib/PhotoInfoCard.svelte';
 
 	import RelativeToDirectoryPicker from '$lib/RelativeToDirectoryPicker.svelte';
@@ -41,7 +41,6 @@
 	</div>
 	<div class="from-pane" in:fly={{ x: '-50%', duration: 2000, easing: quintOut }}>
 		<PhotoImage photo={$photo} />
-		<PhotoInfoCard />
 	</div>
 	<div class="to-pane" in:fly={{ x: '150%', duration: 2000, easing: quintOut }}>
 		<RelativeToDirectoryPicker />

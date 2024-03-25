@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { quintOut } from 'svelte/easing';
-	import { crossfade, fade, fly } from 'svelte/transition';
+	import { crossfade, fade, fly, slide, blur } from 'svelte/transition';
 	import { createEventDispatcher, onMount, tick } from 'svelte';
 
 	import { Button } from '@geoffcox/sterling-svelte';
@@ -32,7 +32,7 @@
 		await dispatcher.nextPhoto();
 		await tick();
 		appStatus.set('idle');
-		appStep.set($photo ? 'organizing' : 'done');
+		appStep.set('organizing');
 	};
 
 	let settingsDialogOpen = false;
@@ -42,12 +42,18 @@
 	};
 </script>
 
-<div class="welcome-view" out:fly={{ y: '-150%', duration: 2000, easing: quintOut }}>
-	<div class="intro">
-		<WelcomeIcon width="300px" height="auto" color="aliceblue" />
-		{#if $appStatus === 'loading'}
-			<div>Loading photos...</div>
-		{/if}
+<div class="welcome-view">
+	<div class="intro" out:fly={{ y: '-150%', duration: 2000, easing: quintOut }}>
+		<div class="welcome-icon">
+			<span>
+				<WelcomeIcon width="300px" height="auto" color="aliceblue" />
+			</span>
+			{#if $appStatus === 'loading'}
+				<span in:fade={{ duration: 2000 }}>
+					<WelcomeIcon width="300px" height="auto" color="rgb(65, 170, 255)" />
+				</span>
+			{/if}
+		</div>
 		<p>Photiso helps you organize your photos.</p>
 		<p>
 			For each photo in the <b>From folder</b>, you choose where to put it in the
@@ -72,7 +78,7 @@
 	>
 		<RootToDirectoryPicker />
 	</div>
-	<div out:fade={{ duration: 500 }} class="actions">
+	<div class="actions" out:fly={{ y: '150%', duration: 2000, easing: quintOut }}>
 		<Button on:click={onStart} variant="colorful">Start Organizing!</Button>
 		<Button on:click={() => (settingsDialogOpen = true)}
 			><SettingsIcon width="1em" height="1em" /></Button
@@ -95,6 +101,19 @@
 		align-items: center;
 		grid-template-areas: 'intro intro' 'fromDir rootToDir' 'actions actions';
 		row-gap: 2em;
+	}
+
+	.welcome-icon {
+		display: grid;
+		place-content: stretch;
+		place-items: stretch;
+		grid-template-columns: 1fr;
+		grid-template-rows: 1fr;
+	}
+
+	.welcome-icon :global(*) {
+		grid-row: 1;
+		grid-column: 1;
 	}
 
 	.intro {

@@ -8,7 +8,7 @@ export type PhotisoWindow = Window &
 		dialogApi: DialogApi;
 	};
 
-export type AppStep = 'welcome' | 'organizing' | 'done';
+export type AppStep = 'welcome' | 'organizing';
 
 export type AppStatus = 'idle' | 'loading' | 'busy';
 
