@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { createEventDispatcher, onMount } from 'svelte';
-	import { DateTime } from 'luxon';
+	import { createEventDispatcher } from 'svelte';
 
 	import type { ActionHistoryItem } from '../types';
 	import type { PathApi } from './ipc.types';
@@ -9,6 +8,8 @@
 
 	import MoveFileIcon from './icons/MoveFileIcon.svelte';
 	import CopyFileIcon from './icons/CopyFileIcon.svelte';
+	import { Button } from '@geoffcox/sterling-svelte';
+	import { getDispatcher } from './dispatcher';
 
 	// ----- Props ----- //
 
@@ -21,7 +22,7 @@
 	const eventDispatcher = createEventDispatcher();
 
 	const onUndo = (item: ActionHistoryItem) => {
-		eventDispatcher('undo', item);
+		getDispatcher().undoAction(item.createdEpoch);
 	};
 
 	type RelativeActionHistoryItem = ActionHistoryItem & { relativeFrom: string; relativeTo: string };
@@ -61,6 +62,7 @@
 		<div class="column-header">{fromDirectory}</div>
 		<div></div>
 		<div class="column-header">{rootToDirectory}</div>
+		<div/>
 	{/if}
 	{#each relativeHistory as item}
 		{#if item.action === 'copy'}
@@ -73,13 +75,14 @@
 		<div class="from">{item.relativeFrom}</div>
 		<div class="between-label">to</div>
 		<div class="to">{item.relativeTo}</div>
+		<Button on:click={() => onUndo(item)} variant="secondary">Undo</Button>
 	{/each}
 </div>
 
 <style>
 	.action-history {
 		display: grid;
-		grid-template-columns: auto auto auto auto auto;
+		grid-template-columns: auto auto auto auto auto auto;
 		grid-template-rows: auto;
 		align-items: center;
 		justify-content: flex-start;

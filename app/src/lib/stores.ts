@@ -10,12 +10,6 @@ export const appStatus = writable<AppStatus>('idle');
 export const userSettings = writable<UserSettings>();
 
 
-// ----- File Navigation Stores ----- //
-
-export const previousFiles = writable<string[]>([]);
-
-export const nextFiles = writable<string[]>([]);
-
 // ----- Source Photo Stores ----- //
 
 /** The directory containing unorganized photos */

@@ -3,10 +3,6 @@
 	import { Button, Dialog } from '@geoffcox/sterling-svelte';
 	import { actionHistory, fromDirectory, rootToDirectory } from './stores';
 	import { getDispatcher } from './dispatcher';
-	import { DateTime } from 'luxon';
-	import { getPathApi } from './ipc.apis';
-	import type { PathApi } from './ipc.types';
-	import { onMount } from 'svelte';
 	import ActionHistoryList from './ActionHistoryList.svelte';
 
 	export let open = false;

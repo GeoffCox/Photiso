@@ -7,6 +7,7 @@
 	import CopyFileIcon from './icons/CopyFileIcon.svelte';
 	import MoveFileIcon from './icons/MoveFileIcon.svelte';
 	import SkipIcon from './icons/SkipIcon.svelte';
+	import BackIcon from './icons/BackIcon.svelte';
 	import StartOverIcon from './icons/StartOverIcon.svelte';
 
 	const dispatcher = getDispatcher();
@@ -21,35 +22,23 @@
 		!$noConflictToFileName;
 
 	const onCopy = async () => {
-		appStatus.set('busy');
 		await tick();
 		await dispatcher.copyPhoto();
-		appStatus.set('loading');
-		await tick();
-		await dispatcher.nextPhoto();
-		await tick();
-		appStatus.set('idle');
 	};
 
 	const onMove = async () => {
-		appStatus.set('busy');
 		await tick();
 		await dispatcher.movePhoto();
-		appStatus.set('loading');
+	};
+
+	const onPrevious = async () => {
 		await tick();
-		await dispatcher.nextPhoto();
-		await tick();
-		appStatus.set('idle');
+		await dispatcher.previousPhoto();
 	};
 
 	const onSkip = async () => {
-		appStatus.set('busy');
-		await tick();
-		appStatus.set('loading');
 		await tick();
 		await dispatcher.nextPhoto();
-		await tick();
-		appStatus.set('idle');
 	};
 
 	const onStartOver = () => {
@@ -59,6 +48,7 @@
 </script>
 
 <div class="photo-actions">
+	<Button on:click={onPrevious}><BackIcon width="24px" height="24px"/>Back</Button>
 	<Button on:click={onStartOver}><StartOverIcon width="24px" height="24px"/>Start Over</Button>
 	<Button disabled={!canAct} on:click={onCopy}><CopyFileIcon width="24px" height="24px"/>Copy</Button>
 	<Button disabled={!canAct} on:click={onMove} variant="colorful"><MoveFileIcon width="24px" height="24px"/>Move</Button>
@@ -68,7 +58,9 @@
 <style>
 	.photo-actions {
 		display: grid;
-		grid-template-columns: auto auto auto auto;
+		grid-template-columns: auto auto auto auto auto;
+		grid-template-rows: auto auto;
+		grid-template-areas:  
 		column-gap: 1em;
 		padding: 0.5em;
 		font-size: 1.5em;

@@ -29,7 +29,6 @@
 		appStatus.set('loading');
 		await tick();
 		await dispatcher.startOrganizing();
-		await dispatcher.nextPhoto();
 		await tick();
 		appStatus.set('idle');
 		appStep.set('organizing');

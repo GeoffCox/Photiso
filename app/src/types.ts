@@ -12,7 +12,6 @@ export type AppStep = 'welcome' | 'organizing';
 
 export type AppStatus = 'idle' | 'loading' | 'busy';
 
-
 export type UserSettings = {
 	enableDefaultDirectoryName: boolean;
 	defaultDirectoryName: string;

@@ -97,9 +97,6 @@
 <div class="root">
 	<div class="main-view">
 		<div class="header">
-			<Button on:click={onNextStep}>Next Step</Button>
-			<Button on:click={onNextStatus}>Next Status</Button>
-			<Header />
 		</div>
 		{#if $appStep === 'welcome'}
 			<div class="welcome-step" transition:fade={{duration:1000}}>
@@ -134,18 +131,18 @@
 		column-gap: 1em;
 		grid-template-columns: 1fr;
 		grid-template-rows: auto 1fr auto;
-		grid-template-areas: 'header' 'organize' 'footer';
+		grid-template-areas: 'header' 'body' 'footer';
 		justify-items: stretch;
 	}
 
 	.header {
 		grid-area: header;
+		height: 20px;
 	}
 
 	.welcome-step,
-	.organize-step,
-	.done-step {
-		grid-area: organize;
+	.organize-step {
+		grid-area: body;
 		padding: 1em;
 	}
 

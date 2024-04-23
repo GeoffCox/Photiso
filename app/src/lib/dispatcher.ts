@@ -8,7 +8,9 @@ import {
 	photo,
 	toFileName,
 	rootToDirectory,
-	actionHistory
+	actionHistory,
+	appStatus,
+	appStep
 } from './stores';
 import { getContext, tick } from 'svelte';
 import { getPathApi, getPhotisoApi } from './ipc.apis';
@@ -20,11 +22,13 @@ import type {
 	UserSettings
 } from '../types';
 import { DateTime } from 'luxon';
+import { createFileNavigator } from './fileNavigator';
 
 const userSettingsStorageKey = 'photiso.UserSettings';
 const appStateStorageKey = 'photiso.AppState';
 
 export const createDispatcher = () => {
+	// ----- Stores ----- //
 	const unsubscribers: Unsubscriber[] = [];
 
 	let $fromDirectory: string | undefined;
@@ -36,6 +40,8 @@ export const createDispatcher = () => {
 	let $toFile: string | undefined;
 	let $userSettings: UserSettings | undefined;
 
+	unsubscribers.push(userSettings.subscribe((value) => ($userSettings = value)));
+
 	unsubscribers.push(fromDirectory.subscribe((value) => ($fromDirectory = value)));
 	unsubscribers.push(rootToDirectory.subscribe((value) => ($rootToDirectory = value)));
 
@@ -43,13 +49,16 @@ export const createDispatcher = () => {
 
 	unsubscribers.push(relativeToDirectory.subscribe((value) => ($relativeToDirectory = value)));
 	unsubscribers.push(toFile.subscribe((value) => ($toFile = value)));
-	unsubscribers.push(userSettings.subscribe((value) => ($userSettings = value)));
 
 	const dispose = () => {
 		for (const unsubscriber of unsubscribers) {
 			unsubscriber();
 		}
 	};
+
+	// ----- File Navigation ----- //
+
+	const fileNav = createFileNavigator();
 
 	// ----- Settings ----- //
 
@@ -84,7 +93,6 @@ export const createDispatcher = () => {
 				fromDirectory.set(mruAppState.fromDirectory);
 				rootToDirectory.set(mruAppState.rootToDirectory);
 				recentRelativeDirectories.set(mruAppState.recentDirectories);
-
 				console.log('dispatcher.loadAppState:', mruAppState);
 			}
 		}
@@ -103,7 +111,7 @@ export const createDispatcher = () => {
 		}
 	};
 
-	// ----- defaults -----//
+	// ----- Default destinations -----//
 
 	let mruRelativeToDirectory: string | undefined = undefined;
 
@@ -129,7 +137,7 @@ export const createDispatcher = () => {
 		return photo.path.name;
 	};
 
-	// ----- load photo ----- //
+	// ----- Photo load ----- //
 
 	const loadPhoto = async (file: string): Promise<Photo> => {
 		const timingStart = Date.now();
@@ -154,26 +162,6 @@ export const createDispatcher = () => {
 		} as Photo;
 	};
 
-	const nextPhoto = async () => {
-		const photiso = getPhotisoApi();
-		await tick();
-		const file = await photiso.next();
-		if (file) {
-			console.log('dispatcher.nextPhoto-file:', file);
-			const newPhoto = await loadPhoto(file);
-
-			photo.set(newPhoto);
-			relativeToDirectory.set(await getDefaultDestinationRelativeDirectory(newPhoto));
-			toFileName.set(await getDefaultToFileName(newPhoto));
-			console.log('dispatcher.nextPhoto-loaded:', file);
-		} else {
-			photo.set(undefined);
-			relativeToDirectory.set(undefined);
-			toFileName.set(undefined);
-			console.log('dispatcher.nextPhoto-none found.');
-		}
-	};
-
 	const loadPhotoSrc = async () => {
 		if ($photo) {
 			if ($photo.src) {
@@ -189,18 +177,82 @@ export const createDispatcher = () => {
 		}
 	};
 
+	// ----- Photo navigation -----//
+
+	const nextPhoto = async () => {
+		await tick();
+
+		appStatus.set('loading');
+		const file = await fileNav.next();
+		if (file) {
+			console.log('dispatcher.nextPhoto-file:', file);
+			const newPhoto = await loadPhoto(file);
+
+			photo.set(newPhoto);
+			relativeToDirectory.set(await getDefaultDestinationRelativeDirectory(newPhoto));
+			toFileName.set(await getDefaultToFileName(newPhoto));
+			console.log('dispatcher.nextPhoto-loaded:', file);
+		} else {
+			photo.set(undefined);
+			relativeToDirectory.set(undefined);
+			toFileName.set(undefined);
+			console.log('dispatcher.nextPhoto-none found.');
+		}
+		appStatus.set('idle');
+	};
+
+	const previousPhoto = async () => {
+		await tick();
+
+		appStatus.set('loading');
+		const file = await fileNav.previous();
+		if (file && file !== $photo?.file) {
+			console.log('dispatcher.previousPhoto-file:', file);
+			const newPhoto = await loadPhoto(file);
+
+			photo.set(newPhoto);
+			relativeToDirectory.set(await getDefaultDestinationRelativeDirectory(newPhoto));
+			toFileName.set(await getDefaultToFileName(newPhoto));
+			console.log('dispatcher.previousPhoto-loaded:', file);
+		}
+		appStatus.set('idle');
+	};
+
+	const goToPhoto = async (file: string) => {
+		await tick();
+
+		appStatus.set('loading');
+		const goToFile = await fileNav.goTo(file);
+		if (goToFile && goToFile !== $photo?.file) {
+			console.log('dispatcher.goToPhoto-file:', goToFile);
+			const newPhoto = await loadPhoto(goToFile);
+
+			photo.set(newPhoto);
+			relativeToDirectory.set(await getDefaultDestinationRelativeDirectory(newPhoto));
+			toFileName.set(await getDefaultToFileName(newPhoto));
+			console.log('dispatcher.goToPhoto-loaded:', goToFile);
+		}
+		appStatus.set('idle');
+	}
+
 	const startOrganizing = async () => {
 		const photiso = getPhotisoApi();
 		if (photiso && $fromDirectory) {
 			await photiso.start($fromDirectory);
+
+			// clear state
 			photo.set(undefined);
 			relativeToDirectory.set(undefined);
 			toFileName.set(undefined);
 			actionHistory.set([]);
-			//TODO: clear recent and favorite directories once app picks up where it left off
+			mruRelativeToDirectory = undefined;
+			fileNav.clear();
 			await nextPhoto();
+			appStep.set('organizing');
 		}
 	};
+
+	// ----- Recent directories -----//
 
 	const maxRecentDirectories = 20;
 
@@ -257,9 +309,12 @@ export const createDispatcher = () => {
 		saveAppState();
 	};
 
+	// ----- Photo actions -----//
+
 	const copyPhoto = async () => {
 		const photiso = getPhotisoApi();
 		if (photiso && $photo && $toFile) {
+			appStatus.set('busy');
 			mruRelativeToDirectory = $relativeToDirectory;
 			await photiso.copy($photo.file, $toFile);
 
@@ -277,15 +332,20 @@ export const createDispatcher = () => {
 
 			mruRelativeToDirectory && addRecentDirectory(mruRelativeToDirectory);
 			saveAppState();
+
+			await nextPhoto();
+			appStatus.set('idle');
 		}
 	};
 
 	const movePhoto = async () => {
 		const photiso = getPhotisoApi();
 		if (photiso && $photo && $toFile) {
+			appStatus.set('busy');
 			mruRelativeToDirectory = $relativeToDirectory;
 			await photiso.move($photo.file, $toFile);
 
+			fileNav.markMoved($photo.file, $toFile);
 			actionHistory.update((h) => {
 				return [
 					{
@@ -299,6 +359,9 @@ export const createDispatcher = () => {
 			});
 			mruRelativeToDirectory && addRecentDirectory(mruRelativeToDirectory);
 			saveAppState();
+
+			await nextPhoto();
+			appStatus.set('idle');
 		}
 	};
 
@@ -307,17 +370,23 @@ export const createDispatcher = () => {
 
 		const history = get(actionHistory);
 		if (history.length > 0) {
+			appStatus.set('busy');
+
 			const historyItem = history.find((i) => i.createdEpoch === createdEpoch);
 			if (historyItem) {
-				await photiso.move(historyItem.to, historyItem.from);
 				console.log('dispatcher.undoLastAction-moved:', historyItem.to, ' to ', historyItem.from);
+				await photiso.move(historyItem.to, historyItem.from);
+				fileNav.markRestored(historyItem.from);
 				actionHistory.update((h) => {
 					return h.filter((i) => i.createdEpoch !== createdEpoch);
 				});
+				goToPhoto(historyItem.from);
 			}
+			appStatus.set('idle');
 		}
 	};
 
+	//TODO: move out of dispatcher
 	const getRelativeActionHistoryItem = async (
 		item: ActionHistoryItem
 	): Promise<ActionHistoryItem> => {
@@ -342,12 +411,13 @@ export const createDispatcher = () => {
 		saveAppState,
 		startOrganizing,
 		nextPhoto,
+		previousPhoto,
 		loadPhotoSrc,
 		copyPhoto,
 		movePhoto,
+		undoAction,
 		favoriteRecentDirectory,
 		removeRecentDirectory,
-		undoAction,
 		getRelativeActionHistoryItem
 	};
 };
