@@ -3,7 +3,7 @@
 	import { Button, Dialog } from '@geoffcox/sterling-svelte';
 	import { actionHistory, fromDirectory, rootToDirectory } from './stores';
 	import { getDispatcher } from './dispatcher';
-	import ActionHistoryList from './ActionHistoryList.svelte';
+	import ActionHistoryList from './ActionHistoryList.svelte.old';
 
 	export let open = false;
 

@@ -29,7 +29,13 @@ export const createFileNavigator = () => {
 		// get the next file from disk
 		const photiso = getPhotisoApi();
 		const nextFile = await photiso.next();
-		currentFile = nextFile ? { file: nextFile } : undefined;
+		if (nextFile) {
+			currentFile = { file: nextFile };
+			return currentFile.file;
+		}
+
+		// undo moving current to back since we didn't find a next file
+        backStack.pop();
 		return currentFile?.file;
 	};
 
@@ -59,12 +65,14 @@ export const createFileNavigator = () => {
 		} else {
 			const backIndex = backStack.findIndex((entry) => entry.file === fromFile);
 			if (backIndex !== -1) {
+				currentFile && forwardStack.push(currentFile);
 				const toForward = backStack.splice(backIndex + 1).reverse();
 				forwardStack.push(...toForward);
 				currentFile = backStack.pop();
 			} else {
 				const forwardIndex = forwardStack.findIndex((entry) => entry.file === fromFile);
 				if (forwardIndex !== -1) {
+					currentFile && backStack.push(currentFile);
 					const toBack = forwardStack.splice(forwardIndex + 1).reverse();
 					backStack.push(...toBack);
 					currentFile = forwardStack.pop();

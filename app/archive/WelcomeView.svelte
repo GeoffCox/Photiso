@@ -1,29 +1,19 @@
 <script lang="ts">
 	import { quintOut } from 'svelte/easing';
-	import { crossfade, fade, fly, slide, blur } from 'svelte/transition';
-	import { createEventDispatcher, onMount, tick } from 'svelte';
+	import { createEventDispatcher, tick } from 'svelte';
 
 	import { Button } from '@geoffcox/sterling-svelte';
 
-	import { getDispatcher } from './dispatcher';
-	import { appStatus, appStep, photo, userSettings } from './stores';
+	import { getDispatcher } from '../src/lib/dispatcher';
+	import { appStatus, appStep, photo, userSettings } from '../src/lib/stores';
 
-	import FromDirectoryPicker from '$lib/FromDirectoryPicker.svelte';
-	import RootToDirectoryPicker from '$lib/RootToDirectoryPicker.svelte';
-	import WelcomeIcon from './icons/WelcomeIcon.svelte';
-	import SettingsIcon from './icons/SettingsIcon.svelte';
+	import FromDirectoryPicker from './FromDirectoryPicker.svelte';
+	import RootToDirectoryPicker from './RootToDirectoryPicker.svelte';
+	import WelcomeIcon from '../src/lib/icons/PolaroidPhotosIcon.svelte';
+	import SettingsIcon from '../src/lib/icons/GearIcon.svelte';
 	import SettingsDialog from '$lib/SettingsDialog.svelte';
 
-	const eventDispatcher = createEventDispatcher();
 	const dispatcher = getDispatcher();
-
-	export let crossFadeParts: ReturnType<typeof crossfade>;
-
-	$: send = crossFadeParts[0];
-	$: receive = crossFadeParts[1];
-
-	const fromDirectoryKey = 'fromDirectory';
-	const rootToDirectoryKey = 'rootToDirectory';
 
 	const onStart = async () => {
 		appStatus.set('loading');
@@ -42,13 +32,13 @@
 </script>
 
 <div class="welcome-view">
-	<div class="intro" out:fly={{ y: '-150%', duration: 2000, easing: quintOut }}>
+	<div class="intro">
 		<div class="welcome-icon">
 			<span>
 				<WelcomeIcon width="300px" height="auto" color="aliceblue" />
 			</span>
 			{#if $appStatus === 'loading'}
-				<span in:fade={{ duration: 2000 }}>
+				<span>
 					<WelcomeIcon width="300px" height="auto" color="rgb(65, 170, 255)" />
 				</span>
 			{/if}
@@ -65,19 +55,15 @@
 	</div>
 	<div
 		class="from-directory"
-		in:send={{ key: fromDirectoryKey }}
-		out:receive={{ key: fromDirectoryKey }}
 	>
 		<FromDirectoryPicker />
 	</div>
 	<div
 		class="to-root-directory"
-		in:send={{ key: rootToDirectoryKey }}
-		out:receive={{ key: rootToDirectoryKey }}
 	>
 		<RootToDirectoryPicker />
 	</div>
-	<div class="actions" out:fly={{ y: '150%', duration: 2000, easing: quintOut }}>
+	<div class="actions" >
 		<Button on:click={onStart} variant="colorful">Start Organizing!</Button>
 		<Button on:click={() => (settingsDialogOpen = true)}
 			><SettingsIcon width="1em" height="1em" /></Button

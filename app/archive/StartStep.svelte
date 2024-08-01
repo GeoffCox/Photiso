@@ -1,10 +1,8 @@
 <script lang="ts">
 	import { Label, Input, Button } from '@geoffcox/sterling-svelte';
-	import { onMount, createEventDispatcher } from 'svelte';
-	import type { PhotisoWindow } from '../types';
-	import type { DialogApi } from './ipc.types';
-	import { crossfade, fade, fly } from 'svelte/transition';
-	import { quintOut } from 'svelte/easing';
+	import { onMount } from 'svelte';
+	import type { PhotisoWindow } from '../src/types';
+	import type { DialogApi } from '../src/lib/ipc.types';
 
 	export let unorganizedDirectory: string = '';
 	export let organizedDirectory: string = '';
@@ -31,36 +29,21 @@
 		}
 	};
 
-	const eventDispatcher = createEventDispatcher();
-
 	const onStart = () => {
 		starting = true;
 	};
 	
-	const onStartAnimationDone = () => {
-		started = true;
-		eventDispatcher('start', { unorganizedDirectory, organizedDirectory });
-	}
 
-	const [send, receive] = crossfade({
-		duration: 1500,
-		easing: quintOut
-	});
-
-	const sourceKey = 'source';
-	const destinationKey = 'destination';
 </script>
 
 <div class="start-step" class:collapsed={started}>
 	{#if starting}
-		<div in:send={{ key: sourceKey }} out:receive={{ key: sourceKey }} class="display-source">
+		<div class="display-source">
 			<Label text="Directory of unorganized photos">
 				<div>{unorganizedDirectory}</div>
 			</Label>
 		</div>
 		<div
-			in:send={{ key: destinationKey }}
-			out:receive={{ key: destinationKey }}
 			class="display-destination"
 		>
 			<Label text="Directory of organized photos">
@@ -68,16 +51,13 @@
 			</Label>
 		</div>
 	{:else}
-		<div in:send={{ key: sourceKey }} out:receive={{ key: sourceKey }} class="edit-source">
+		<div class="edit-source">
 			<Label text="Directory of unorganized photos">
 				<Input bind:value={unorganizedDirectory} />
 			</Label>
 			<Button on:click={onUnorganizedDirectoryBrowse}>...</Button>
 		</div>
 		<div
-			in:send={{ key: destinationKey }}
-			out:receive={{ key: destinationKey }}
-			on:outroend={onStartAnimationDone}
 			class="edit-destination"
 		>
 			<Label text="Directory of organized photos">
@@ -85,7 +65,7 @@
 			</Label>
 			<Button on:click={onOrganizedDirectoryBrowse}>...</Button>
 		</div>
-		<div out:fade class="start-action">
+		<div class="start-action">
 			<Button on:click={onStart}>Start Organizing</Button>
 		</div>
 	{/if}

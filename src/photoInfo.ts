@@ -10,8 +10,6 @@ const parseDateTimeOriginal = (data: {
   subsecond?: string;
   timeZoneOffset?: string;
 }): string | undefined => {
-  console.log("parseDateTimeOriginal", data);
-
   // DateTimeOriginal : "2024:01:03 21:59:19"
   // SubSecTimeOriginal: "507"
   // OffsetTimeDigitized : "-08:00"

@@ -5,7 +5,6 @@ import { createDialogApi } from "./dialogApi";
 
 if (app.getName() === "Electron") {
   app.setName("photiso");
-  console.log("app name", app.getName());
 }
 
 const loadUrl = (appWindow: BrowserWindow) => {

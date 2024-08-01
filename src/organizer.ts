@@ -46,14 +46,14 @@ export const createOrganizer = (): PhotisoApi => {
   const acquireFiles = async () => {
     // get the files for the next directory until exhausted
     while (filesToProcess.length === 0 && directoriesToProcess.length > 0) {
-      console.log(".");
+      // console.log(".");
       currentDirectory = directoriesToProcess.shift();
       currentDirectory && (await addDirectory(currentDirectory));
     }
   };
 
   const start = async (unorganizedDir: string) => {
-    console.log("start", unorganizedDir);
+    // console.log("start", unorganizedDir);
 
     filesToProcess = [];
     directoriesToProcess = [];
@@ -62,7 +62,7 @@ export const createOrganizer = (): PhotisoApi => {
   };
 
   const next = async (): Promise<string | undefined> => {
-    console.log("next");
+    // console.log("next");
 
     await acquireFiles();
     return filesToProcess.length > 0 ? filesToProcess.shift() : undefined;
@@ -74,7 +74,7 @@ export const createOrganizer = (): PhotisoApi => {
   };
 
   const getInfo = async (file: string): Promise<PhotoInfo> => {
-    console.log("getInfo", file);
+    // console.log("getInfo", file);
     return await getPhotoInfo(file);
   };
 
@@ -90,7 +90,7 @@ export const createOrganizer = (): PhotisoApi => {
     try {
       if (file) {
         const stat = await fspromises.stat(file);
-        console.log("fileExists", file, stat?.isFile);
+        // console.log("fileExists", file, stat?.isFile);
         return !!stat?.isFile;
       }
     } catch (_e) {}
@@ -98,9 +98,9 @@ export const createOrganizer = (): PhotisoApi => {
   };
 
   const getNoOverwriteSuffix = async (dest: string) => {
-    console.log("getNoOverwriteSuffix", dest);
+    // console.log("getNoOverwriteSuffix", dest);
     if (!(await fileExists(dest))) {
-      console.log("getNoOverwriteSuffix", dest, " does not exist");
+      // console.log("getNoOverwriteSuffix", dest, " does not exist");
       return undefined;
     }
 
@@ -124,12 +124,12 @@ export const createOrganizer = (): PhotisoApi => {
       throw new Error("Number of destination file collisions exceeded 1000.");
     }
 
-    console.log("getNoOverwriteSuffix", dest, " exists. suffix:", suffix);
+    // console.log("getNoOverwriteSuffix", dest, " exists. suffix:", suffix);
     return suffix;
   };
 
   const copy = async (source: string, dest: string): Promise<void> => {
-    console.log("copy", source, dest);
+    // console.log("copy", source, dest);
     return fspromises.copyFile(source, dest, fs.constants.COPYFILE_EXCL);
   };
 
@@ -145,12 +145,12 @@ export const createOrganizer = (): PhotisoApi => {
       }
 
       const destDir = path.dirname(dest);
-      console.log("move - destDir:", destDir);
+      // console.log("move - destDir:", destDir);
       if (destDir) {
         await fspromises.mkdir(destDir, { recursive: true });
       }
 
-      console.log("move", source, dest);
+      // console.log("move", source, dest);
       return fspromises.rename(source, dest);
     }
   };

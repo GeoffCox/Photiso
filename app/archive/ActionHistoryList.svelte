@@ -21,8 +21,9 @@
 
 	const eventDispatcher = createEventDispatcher();
 
+	const dispatcher = getDispatcher();
 	const onUndo = (item: ActionHistoryItem) => {
-		getDispatcher().undoAction(item.createdEpoch);
+		dispatcher.undoAction(item.createdEpoch);
 	};
 
 	type RelativeActionHistoryItem = ActionHistoryItem & { relativeFrom: string; relativeTo: string };

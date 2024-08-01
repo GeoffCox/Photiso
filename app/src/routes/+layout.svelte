@@ -21,9 +21,12 @@
 			dispatcher.saveAppState();
 		}
 	})
+
+	let clientHeight : number;
+	let clientWidth: number;
 </script>
 
-<div class="app" use:applyLightDarkMode={{ atDocumentRoot: true, mode: 'light' }}>
+<div class="app" use:applyLightDarkMode={{ atDocumentRoot: true, mode: 'light' }} bind:clientHeight bind:clientWidth>
 	<slot />
 </div>
 
@@ -38,6 +41,7 @@
 			'Segoe UI',
 			'Open Sans',
 			sans-serif;
+		font-size: 16	px;
 
 		/* height: 100vh; */
 		position: absolute;

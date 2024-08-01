@@ -38,7 +38,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@geoffcox/sterling-svelte": "^1.0.5",
+		"@geoffcox/sterling-svelte": "1.0.10",
 		"luxon": "^3.4.4",
 		"pretty-bytes": "^6.1.1"
 	}

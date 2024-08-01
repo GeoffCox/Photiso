@@ -4,8 +4,8 @@
 	import { actionHistory, fromDirectory, rootToDirectory } from './stores';
 	import { getDispatcher } from './dispatcher';
 
-	import ActionHistoryDialog from './ActionHistoryDialog.svelte';
-	import ActionHistoryList from './ActionHistoryList.svelte';
+	import ActionHistoryDialog from './ActionHistoryDialog.old';
+	import ActionHistoryList from './ActionHistoryList.svelte.old';
 	import { type ActionHistoryItem } from '../types';
 
 	const dispatcher = getDispatcher();

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import prettybytes from 'pretty-bytes';
-	import type { Photo } from '../types';
+	import type { Photo } from '../../types';
 
-	export let photo : Photo | undefined = undefined;
+	export let photo: Photo | undefined = undefined;
 
 	$: dateTakenText = photo?.dateTaken
 		? photo.dateTaken.toLocaleString({
@@ -17,7 +17,7 @@
 			})
 		: undefined;
 
-	$: relativeDir = photo?.path.dir;
+	$: folder = photo?.path.dir;
 	$: fileName = photo?.path.name;
 
 	$: fileSize = photo?.sizeInBytes ? prettybytes(photo.sizeInBytes) : undefined;
@@ -33,22 +33,20 @@
 </script>
 
 <div class="photo-info-card">
-		<div>Directory</div>
-		<div>{relativeDir ?? ''}</div>
-		<div>File</div>
-		<div>{fileName ?? ''}</div>
-		<div>Size</div>
-		<div>{fileSize ?? ''}</div>
-		<div>Date Taken</div>
-		<div>{dateTakenText ?? ''}</div>
-		<div>Dimensions</div>
-		<div>{dimensions ?? ''}</div>
-		<div>Resolution</div>
-		<div>{resoluton ?? ''}</div>
-		<div>Make</div>
-		<div>{photo?.make ?? ''}</div>
-		<div>Model</div>
-		<div>{photo?.model ?? ''}</div>
+	<div>Folder</div>
+	<div>{folder ?? ''}</div>
+	<div>File</div>
+	<div>{fileName ?? ''}</div>
+	<div>Taken on</div>
+	<div>{dateTakenText ?? ''}</div>
+	<div>Size</div>
+	<div>{fileSize ?? ''}</div>
+	<div>Dimensions</div>
+	<div>{dimensions ?? ''}</div>
+	<div>Resolution</div>
+	<div>{resoluton ?? ''}</div>
+	<div>Camera</div>
+	<div>{photo?.make ?? ''} {photo?.model ?? ''}</div>
 </div>
 
 <style>
@@ -61,7 +59,11 @@
 		font-size: 0.8em;
 	}
 
-	.photo-into-card div:nth-child(odd) {
+	.photo-info-card div {
+		word-break: break-all;
+	}
+
+	.photo-info-card div:nth-child(odd) {
 		justify-self: flex-end;
 	}
 

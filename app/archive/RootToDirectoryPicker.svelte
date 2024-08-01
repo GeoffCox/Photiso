@@ -1,54 +1,51 @@
 <script lang="ts">
 	import { Label, Input, Button } from '@geoffcox/sterling-svelte';
-	import { getDialogApi } from './ipc.apis';
-	import { fromDirectory } from './stores';
+	import { getDialogApi } from '../src/lib/ipc.apis';
+	import { rootToDirectory } from '../src/lib/stores';
 
 	export let readonly = false;
 
 	const onBrowse = async () => {
 		const dialog = getDialogApi();
 		if (dialog) {
-			const selectedDir = await dialog.browseForDirectory($fromDirectory ?? '');
+			const selectedDir = await dialog.browseForDirectory($rootToDirectory ?? '');
 			if (selectedDir) {
-				fromDirectory.set(selectedDir);
+				rootToDirectory.set(selectedDir);
 			}
 		}
 	};
 
-	const labelText = 'From folder';
-
+	const labelText = 'To folder';
 </script>
 
 {#if readonly}
-	<div class="from-directory-picker readonly">
+	<div class="to-root-directory-picker readonly">
 		<Label text={labelText}>
-			<div>{$fromDirectory}</div>
+			<div>{$rootToDirectory}</div>
 		</Label>
 	</div>
 {:else}
-	<div class="from-directory-picker">
+	<div class="to-root-directory-picker">
 		<Label text={labelText}>
-			<Input bind:value={$fromDirectory} />
+			<Input bind:value={$rootToDirectory} />
 		</Label>
 		<Button on:click={onBrowse}>...</Button>
 	</div>
 {/if}
 
 <style>
-	.from-directory-picker {
+	.to-root-directory-picker {
 		display: grid;
 		grid-template-columns: 1fr auto;
 		align-items: flex-end;
 		column-gap: 0.5em;
 	}
 
-	.from-directory-picker.readonly {
+	.to-root-directory-picker.readonly {
 		grid-template-columns: 1fr;
-		align-items: center;
-		column-gap: 0;
 	}
 
-	.from-directory-picker.readonly div {
+	.to-root-directory-picker.readonly div {
 		padding: 0.5 0 0 0.5em;
 		border: 2px solid transparent;
 	}

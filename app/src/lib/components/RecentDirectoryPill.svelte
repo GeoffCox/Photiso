@@ -1,26 +1,34 @@
 <script lang="ts">
 	import { Button } from '@geoffcox/sterling-svelte';
-	import FavoriteFilledIcon from './icons/FavoriteFilledIcon.svelte';
-	import FavoriteIcon from './icons/FavoriteIcon.svelte';
-	import { getDispatcher } from './dispatcher';
-	import type { RecentDirectory } from '../types';
-	import RemoveItemIcon from './icons/RemoveItemIcon.svelte';
+	import FavoriteFilledIcon from '../icons/FilledHeartIcon.svelte';
+	import FavoriteIcon from '../icons/SmallHeartIcon.svelte';
+	import type { RecentDirectory } from '../../types';
+	import RemoveItemIcon from '../icons/XIcon.svelte';
+	import { createEventDispatcher } from 'svelte';
 
 	export let recentDirectory: RecentDirectory;
 
-	const dispatcher = getDispatcher();
+	const dispatch = createEventDispatcher();
 
-	const onToggleFavorite = () => {
-		dispatcher.favoriteRecentDirectory(recentDirectory, !recentDirectory.favorite);
+	const raiseToggle = (recentDirectory: RecentDirectory) => {
+		dispatch('toggleFavorite', recentDirectory);
+	};
+
+	const raiseRemove = (recentDirectory: RecentDirectory) => {
+		dispatch('remove', recentDirectory);
+	};
+
+	const onToggle = () => {
+		raiseToggle(recentDirectory);
 	};
 
 	const onRemove = () => {
-		dispatcher.removeRecentDirectory(recentDirectory);
+		raiseRemove(recentDirectory)
 	}
 </script>
 
 <div class="recent-directory">
-	<Button on:click={onToggleFavorite} variant="tool square left">
+	<Button on:click={onToggle} variant="tool square left">
 		{#if recentDirectory.favorite}
 			<span class="favorite-filled">
 				<FavoriteFilledIcon />

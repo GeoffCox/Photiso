@@ -8,9 +8,7 @@ export type PhotisoWindow = Window &
 		dialogApi: DialogApi;
 	};
 
-export type AppStep = 'welcome' | 'organizing';
-
-export type AppStatus = 'idle' | 'loading' | 'busy';
+export type AppStatus = 'waiting' | 'loading' | 'ready' | 'busy' | 'done';
 
 export type UserSettings = {
 	enableDefaultDirectoryName: boolean;

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import DirectoryIcon from './icons/DirectoryIcon.svelte';
-	import PhotoFileIcon from './icons/PhotoFileIcon.svelte';
+	import DirectoryIcon from '../src/lib/icons/FolderIcon.svelte';
+	import PhotoFileIcon from '../src/lib/icons/PhotoIcon.svelte';
 
 	export let path: string;
 

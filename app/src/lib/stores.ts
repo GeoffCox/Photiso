@@ -1,14 +1,11 @@
 import { derived, writable, type Readable } from 'svelte/store';
 import { getPathApi, getPhotisoApi } from './ipc.apis';
-import { type AppStep, type ActionHistoryItem, type Photo, type RecentDirectory, type UserSettings, type AppStatus } from '../types';
+import { type ActionHistoryItem, type Photo, type RecentDirectory, type UserSettings, type AppStatus } from '../types';
 
 // ----- App Stores ----- //
-export const appStep = writable<AppStep>('welcome');
-
-export const appStatus = writable<AppStatus>('idle');
+export const appStatus = writable<AppStatus>('waiting');
 
 export const userSettings = writable<UserSettings>();
-
 
 // ----- Source Photo Stores ----- //
 
@@ -69,15 +66,32 @@ export const toFile: Readable<string | undefined> = derived(
 export const noConflictToFileName: Readable<string | undefined> = derived(
 	[toFile, toFileName, photo],
 	([$destinationFile, $destinationFileName], set) => {
-		console.log('noConflictToFileName triggered');
 		const photiso = getPhotisoApi();
 		if (photiso && $destinationFile) {
-			console.log('noConflictToFileName check:', $destinationFile);
 			photiso.getNoOverwriteSuffix($destinationFile).then((suffix) => {
 				suffix ? set(`${$destinationFileName}${suffix}`) : set(undefined);
 			});
 		} else {
 			set(undefined);
 		}
+	}
+);
+
+// ----- Action Stores ----- //
+
+
+
+export const canAct: Readable<boolean> = derived(
+	[appStatus, photo, toFile, noConflictToFileName],
+	([$appStatus, $photo, $toFile, $noConflictToFileName], set) => {
+		const canAct =
+		!!($appStatus === 'ready' &&
+		$photo?.file &&
+		$photo.file.length > 0 &&
+		$toFile &&
+		$toFile.length > 0 &&
+		$photo.file != $toFile &&
+		!$noConflictToFileName);
+		set(canAct);
 	}
 );
