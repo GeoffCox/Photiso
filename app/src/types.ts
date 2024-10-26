@@ -1,21 +1,16 @@
 import type { PhotisoApi, PathApi, DialogApi, PhotoInfo, ParsedPath } from '$lib/ipc.types';
 import type { DateTime } from 'luxon';
 
+export type AppStatus = 'waiting' | 'loading' | 'ready' | 'busy' | 'done';
+
+export type Action = 'copy' | 'move';
+
 export type PhotisoWindow = Window &
 	typeof globalThis & {
 		photisoApi: PhotisoApi;
 		pathApi: PathApi;
 		dialogApi: DialogApi;
 	};
-
-export type AppStatus = 'waiting' | 'loading' | 'ready' | 'busy' | 'done';
-
-export type UserSettings = {
-	enableDefaultDirectoryName: boolean;
-	defaultDirectoryName: string;
-	enableDefaultFileName: boolean;
-	defaultFileName: string;
-};
 
 export type Photo = Omit<PhotoInfo, 'dateTaken'> & {
 	path: ParsedPath;
@@ -25,13 +20,6 @@ export type Photo = Omit<PhotoInfo, 'dateTaken'> & {
 	src?: string;
 };
 
-export type ActionHistoryItem = {
-	action: 'copy' | 'move';
-	createdEpoch: number;
-	from: string;
-	to: string;
-};
-
 export type RecentDirectory = {
 	dir: string;
 	favorite?: boolean;
@@ -39,8 +27,24 @@ export type RecentDirectory = {
 	lastUsedEpoch: number;
 };
 
-export type MruAppState = {
+export type ActionHistoryItem = {
+	action: 'copy' | 'move';
+	createdEpoch: number;
+	from: string;
+	to: string;
+};
+
+export type AppState = {
 	fromDirectory?: string;
-	rootToDirectory?: string;
 	recentDirectories: RecentDirectory[];
 };
+
+export type UserSettings = {
+	enableDefaultDirectoryName: boolean;
+	defaultDirectoryPattern: string;
+	enableDefaultFileName: boolean;
+	defaultFileNamePattern: string;
+	autoRenameConflicts: boolean;
+	copyOrMove: 'copy' | 'move';
+};
+

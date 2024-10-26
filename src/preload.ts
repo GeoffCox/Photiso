@@ -8,7 +8,8 @@ const photisoApi: PhotisoApi = {
   getInfo: (file: string) => ipcRenderer.invoke("getInfo", file),
   getThumbnailSrc: (file: string) => ipcRenderer.invoke("getThumbnailSrc", file),
   getSrc: (file: string) => ipcRenderer.invoke("getSrc", file),
-  getNoOverwriteSuffix: (dest: string) => ipcRenderer.invoke("getNoOverwriteSuffix", dest),
+  getSrcHash: (file: string) => ipcRenderer.invoke("getSrcHash", file),
+  getNoConflictFileNameSufix: (dest: string) => ipcRenderer.invoke("getNoConflictFileNameSufix", dest),
   copy: (source: string, dest: string) => ipcRenderer.invoke("copy", source, dest),
   move: (source: string, dest: string) => ipcRenderer.invoke("move", source, dest),
 };

@@ -43,7 +43,8 @@ app.whenReady().then(() => {
   ipcMain.handle("getInfo", (_event, file) => photisoApi.getInfo(file));
   ipcMain.handle("getThumbnailSrc", (_event, file) => photisoApi.getThumbnailSrc(file));
   ipcMain.handle("getSrc", (_event, file) => photisoApi.getSrc(file));
-  ipcMain.handle("getNoOverwriteSuffix", (_event, dest) => photisoApi.getNoOverwriteSuffix(dest));
+  ipcMain.handle("getSrcHash", (_event, file) => photisoApi.getSrcHash(file));
+  ipcMain.handle("getNoConflictFileNameSufix", (_event, dest) => photisoApi.getNoConflictFileNameSufix(dest));
   ipcMain.handle("copy", (_event, source, dest) => photisoApi.copy(source, dest));
   ipcMain.handle("move", (_event, source, dest) => photisoApi.move(source, dest));
   

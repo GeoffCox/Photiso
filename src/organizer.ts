@@ -1,3 +1,4 @@
+import * as crypto from "node:crypto";
 import * as path from "node:path";
 import * as fs from "node:fs";
 import * as fspromises from "node:fs/promises";
@@ -6,7 +7,7 @@ import { PhotisoApi, PhotoInfo } from "./ipc.types";
 import { nativeImage } from "electron";
 import { getPhotoInfo } from "./photoInfo";
 
-const photoFileExtensions = [".jpg", ".JPG", ".png", ".PNG"];
+const photoFileExtensions = [".jpg", ".JPG", ".png", ".PNG", ".tif", ".TIF", ".tiff", ".TIFF"];
 
 export const createOrganizer = (): PhotisoApi => {
   let dir: string | undefined = undefined;
@@ -86,6 +87,12 @@ export const createOrganizer = (): PhotisoApi => {
     return Promise.resolve(nativeImage.createFromPath(file).toDataURL());
   };
 
+  const getSrcHash = async (file: string): Promise<string> => {
+    const buffer = nativeImage.createFromPath(file).toBitmap();
+    const dataView = new DataView(buffer.buffer);
+    return Promise.resolve(crypto.createHash('sha1').update(dataView).digest('hex').toString());
+  };
+
   const fileExists = async (file: string): Promise<boolean> => {
     try {
       if (file) {
@@ -97,10 +104,10 @@ export const createOrganizer = (): PhotisoApi => {
     return false;
   };
 
-  const getNoOverwriteSuffix = async (dest: string) => {
-    // console.log("getNoOverwriteSuffix", dest);
+  const getNoConflictFileNameSufix = async (dest: string) => {
+    // console.log("getNoConflictFileNameSufix", dest);
     if (!(await fileExists(dest))) {
-      // console.log("getNoOverwriteSuffix", dest, " does not exist");
+      // console.log("getNoConflictFileNameSufix", dest, " does not exist");
       return undefined;
     }
 
@@ -124,7 +131,7 @@ export const createOrganizer = (): PhotisoApi => {
       throw new Error("Number of destination file collisions exceeded 1000.");
     }
 
-    // console.log("getNoOverwriteSuffix", dest, " exists. suffix:", suffix);
+    // console.log("getNoConflictFileNameSufix", dest, " exists. suffix:", suffix);
     return suffix;
   };
 
@@ -162,7 +169,8 @@ export const createOrganizer = (): PhotisoApi => {
     getInfo,
     getThumbnailSrc,
     getSrc,
-    getNoOverwriteSuffix,
+    getSrcHash,
+    getNoConflictFileNameSufix,
     copy,
     move,
   };

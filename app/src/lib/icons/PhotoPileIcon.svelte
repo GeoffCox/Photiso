@@ -1,13 +1,6 @@
-<svg
-	fill="currentColor"
-    width="32px"
-    height="32px"
-	viewBox="0 0 32 32"
-	version="1.1"
-	xmlns="http://www.w3.org/2000/svg"
-	{...$$restProps}
+<!-- https://www.svgrepo.com/svg/485848/pictures -->
+<svg fill="currentColor" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" {...$$restProps}
 	><g stroke-width="0"></g><g
-		id="SVGRepo_tracerCarrier"
 		stroke-linecap="round"
 		stroke-linejoin="round"
 	></g><g>

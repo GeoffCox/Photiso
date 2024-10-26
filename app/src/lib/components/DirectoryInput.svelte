@@ -3,7 +3,8 @@
 	import { getDialogApi } from '../ipc.apis';
 
 	export let directory : string | undefined;
-	export let label : string;
+	export let label : string | undefined = undefined;
+	export let readonly : boolean | undefined = undefined;
 
 	const onBrowse = async () => {
 		const dialog = getDialogApi();
@@ -14,13 +15,20 @@
 			}
 		}
 	};
+
+ $: console.log('readonly',readonly);
 </script>
 
 <div class="directory">
+	{#if label}
 	<Label text={label}>
-		<Input bind:value={directory} />
+		<Input bind:value={directory} readonly={readonly || null} {...$$restProps}/>
 	</Label>
-	<Button on:click={onBrowse}>...</Button>
+	<Button on:click={onBrowse} disabled={readonly}>...</Button>
+	{:else}
+	<Input bind:value={directory} {...$$restProps}/>
+	<Button on:click={onBrowse} disabled={readonly}>...</Button>
+	{/if}
 </div>
 
 <style>

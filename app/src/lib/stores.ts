@@ -1,6 +1,6 @@
 import { derived, writable, type Readable } from 'svelte/store';
-import { getPathApi, getPhotisoApi } from './ipc.apis';
-import { type ActionHistoryItem, type Photo, type RecentDirectory, type UserSettings, type AppStatus } from '../types';
+import type { ActionHistoryItem, Photo, UserSettings, AppStatus, RecentDirectory, Action } from '../types';
+import { getPathApi } from './ipc.apis';
 
 // ----- App Stores ----- //
 export const appStatus = writable<AppStatus>('waiting');
@@ -9,89 +9,91 @@ export const userSettings = writable<UserSettings>();
 
 // ----- Source Photo Stores ----- //
 
-/** The directory containing unorganized photos */
 export const fromDirectory = writable<string | undefined>();
 
-/** The current photo to organize */
 export const photo = writable<Photo | undefined>();
+
+export const nextPhoto = writable<Photo | undefined>();
+
+export const previousPhoto = writable<Photo | undefined>();
+
+export const photoSequence = writable<(Photo|undefined)[]>([]);
 
 // ----- Destination Stores ----- //
 
-/** The directory that is the destination for organized photos */
-export const rootToDirectory = writable<string | undefined>();
+export const toDirectory = writable<string | undefined>();
 
-/** The directory relative to organizedDirectory to put the current photo */
-export const relativeToDirectory = writable<string | undefined>();
-
-/** The file name to use when moving/copying the current photo */
 export const toFileName = writable<string | undefined>();
 
-/** The list of directories where photos were moved or copied */
-export const recentRelativeDirectories = writable<RecentDirectory[]>([]);
-
-/** The most recent to least recent history of actions taken */
-export const actionHistory = writable<ActionHistoryItem[]>([]);
-
-/** The full path to the destination directory **/
-export const toDirectory: Readable<string | undefined> = derived(
-	[rootToDirectory, relativeToDirectory],
-	([$organizedDirectory, $destinationRelativeDirectory], set) => {
-		const path = getPathApi();
-		if (path && $organizedDirectory) {
-			path
-				.join($organizedDirectory, $destinationRelativeDirectory ?? '')
-				.then((value) => set(value));
-		} else {
-			set(undefined);
-		}
-	}
-);
-
-/** The full path to the destination file **/
 export const toFile: Readable<string | undefined> = derived(
 	[toDirectory, toFileName, photo],
-	([$destinationDirectory, $destinationFileName, $photo], set) => {
+	([$toDirectory, $toFileName, $photo], set) => {
 		const path = getPathApi();
-		if (path && $destinationDirectory && $destinationFileName && $photo?.path?.ext) {
-			path
-				.join($destinationDirectory, `${$destinationFileName}${$photo.path.ext}`)
-				.then((value) => set(value));
+		if (path && $toDirectory && $toFileName && $photo?.path?.ext) {
+			path.join($toDirectory, `${$toFileName}${$photo.path.ext}`).then((value) => set(value));
 		} else {
 			set(undefined);
 		}
 	}
 );
 
-/** The destination file name that does not cause an overwrite conflict **/
-export const noConflictToFileName: Readable<string | undefined> = derived(
-	[toFile, toFileName, photo],
-	([$destinationFile, $destinationFileName], set) => {
-		const photiso = getPhotisoApi();
-		if (photiso && $destinationFile) {
-			photiso.getNoOverwriteSuffix($destinationFile).then((suffix) => {
-				suffix ? set(`${$destinationFileName}${suffix}`) : set(undefined);
-			});
+export const favoriteDirectories = writable<string[]>([]);
+
+export const recentDirectories = writable<RecentDirectory[]>([]);
+
+export const defaultToDirectoryName: Readable<string | undefined> = derived(
+	[photo, recentDirectories, userSettings],
+	([$photo, $recentDirectories, $userSettings], set) => {
+		if ($userSettings?.enableDefaultDirectoryName) {
+			if ($photo?.dateTaken && $userSettings?.defaultDirectoryPattern !== undefined) {
+				console.log(
+					'defaultToDirectoryName',
+					$photo.dateTaken.toFormat($userSettings.defaultDirectoryPattern)
+				);
+				set($photo.dateTaken.toFormat($userSettings.defaultDirectoryPattern));
+			} else {
+				set('');
+			}
+		} else if ($recentDirectories.length > 0) {
+			set($recentDirectories.toSorted((a, b) => b.lastUsedEpoch - a.lastUsedEpoch)?.[0]?.dir || '');
 		} else {
-			set(undefined);
+			set('');
 		}
 	}
 );
+
+export const defaultToFileName: Readable<string | undefined> = derived(
+	[photo, userSettings],
+	([$photo, $userSettings], set) => {
+		if (
+			$userSettings?.enableDefaultFileName &&
+			$photo?.dateTaken &&
+			$userSettings?.defaultFileNamePattern !== undefined
+		) {
+			set($photo.dateTaken.toFormat($userSettings.defaultFileNamePattern));
+		} else {
+			set($photo?.path.name);
+		}
+	}
+);
+
+export const action = writable<Action>('move');
+
+export const actionHistory = writable<ActionHistoryItem[]>([]);
 
 // ----- Action Stores ----- //
-
-
-
 export const canAct: Readable<boolean> = derived(
-	[appStatus, photo, toFile, noConflictToFileName],
-	([$appStatus, $photo, $toFile, $noConflictToFileName], set) => {
-		const canAct =
-		!!($appStatus === 'ready' &&
-		$photo?.file &&
-		$photo.file.length > 0 &&
-		$toFile &&
-		$toFile.length > 0 &&
-		$photo.file != $toFile &&
-		!$noConflictToFileName);
+	[appStatus, photo, toDirectory, toFileName],
+	([$appStatus, $photo, $toDirectory, $toFileName], set) => {
+		const canAct = !!(
+			$appStatus === 'ready' &&
+			$photo?.file &&
+			$photo.file.length > 0 &&
+			$toDirectory &&
+			$toDirectory.length > 0 &&
+			$toFileName &&
+			$toFileName.length > 0
+		);
 		set(canAct);
 	}
 );

@@ -10,25 +10,33 @@
 
 	const dispatch = createEventDispatcher();
 
-	const raiseToggle = (recentDirectory: RecentDirectory) => {
-		dispatch('toggleFavorite', recentDirectory);
+	const raiseFavorite = (recentDirectory: RecentDirectory) => {
+		dispatch('favorite', { recentDirectory} );
 	};
+
+	const onFavorite = () => {
+		raiseFavorite(recentDirectory);
+	};
+
+	const raiseSelect = (recentDirectory: RecentDirectory) => {
+		dispatch('select', { recentDirectory});
+	};
+
+	const onSelect = () => {
+		raiseSelect(recentDirectory)
+	}
 
 	const raiseRemove = (recentDirectory: RecentDirectory) => {
-		dispatch('remove', recentDirectory);
+		dispatch('remove', { recentDirectory});
 	};
-
-	const onToggle = () => {
-		raiseToggle(recentDirectory);
-	};
-
+	
 	const onRemove = () => {
 		raiseRemove(recentDirectory)
 	}
 </script>
 
 <div class="recent-directory">
-	<Button on:click={onToggle} variant="tool square left">
+	<Button on:click={onFavorite} variant="tool square left">
 		{#if recentDirectory.favorite}
 			<span class="favorite-filled">
 				<FavoriteFilledIcon />
@@ -39,8 +47,8 @@
 			</span>
 		{/if}
 	</Button>
-	<Button variant="tool square" on:click>{recentDirectory.dir}</Button>
-	<Button on:click={onRemove} variant="tool square right">
+	<Button variant="tool square" on:click={onSelect}>{recentDirectory.dir}</Button>
+	<Button on:click={onRemove} disabled={recentDirectory.favorite} variant="tool square right">
 		<span class="remove">
 			<RemoveItemIcon />
 		</span>

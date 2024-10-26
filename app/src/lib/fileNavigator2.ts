@@ -19,7 +19,7 @@ export const createFileNavigator2 = () => {
 				nextIndex++;
 				if (!files[nextIndex].movedTo) {
 					index = nextIndex;
-					console.log('navigator.next found in forward stack', current()?.file);
+					// console.log('navigator.next found in forward stack', current()?.file);
 					return current()?.file;
 				}
 			}
@@ -31,13 +31,13 @@ export const createFileNavigator2 = () => {
 		if (nextFile) {
 			files.push({ file: nextFile });
 			index = files.length - 1;
-			console.log('navigator.next loaded', current()?.file);
+			// console.log('navigator.next loaded', current()?.file);
 
 			return current()?.file;
 		}
 
 		// didn't find any next, return current
-		console.log('navigator.next sticking with current', current()?.file);
+		// console.log('navigator.next sticking with current', current()?.file);
 		return current()?.file;
 	};
 
@@ -49,14 +49,14 @@ export const createFileNavigator2 = () => {
 				prevIndex--;
 				if (!files[prevIndex].movedTo) {
 					index = prevIndex;
-					console.log('navigator.prev found in back stack', current()?.file);
+					// console.log('navigator.prev found in back stack', current()?.file);
 					return current()?.file;
 				}
 			}
 		}
 
 		// didn't find any previous, return current
-		console.log('navigator.prev sticking with current', current()?.file);
+		// console.log('navigator.prev sticking with current', current()?.file);
 		return current()?.file;
 	};
 
@@ -64,12 +64,12 @@ export const createFileNavigator2 = () => {
 		const goIndex = files.findIndex((entry) => entry.file === file);
 		if (goIndex !== -1) {
 			index = goIndex;
-			console.log('navigator.goTo found', current()?.file);
+			// console.log('navigator.goTo found', current()?.file);
 			return current()?.file;
 		}
 
 		// file not found
-		console.log('navigator.goTo not found');
+		// console.log('navigator.goTo not found');
 		return undefined;
 	};
 
@@ -77,7 +77,7 @@ export const createFileNavigator2 = () => {
 		const markIndex = files.findIndex((entry) => entry.file === fromFile);
 		if (markIndex !== -1) {
 			// TODO: What if already moved?
-			console.log('navigator.mark updating', files[markIndex].file, 'to', toFile);
+			// console.log('navigator.mark updating', files[markIndex].file, 'to', toFile);
 
 			files[markIndex].movedTo = toFile;
 		}
@@ -87,11 +87,51 @@ export const createFileNavigator2 = () => {
 		const restoreIndex = files.findIndex((entry) => entry.file === origFile);
 		if (restoreIndex !== -1) {
 			// TODO: What if not moved?
-			console.log('navigator.restore updating', files[restoreIndex].file, 'to', origFile);
+			// console.log('navigator.restore updating', files[restoreIndex].file, 'to', origFile);
 
 			files[restoreIndex].movedTo = undefined;
 		}
 	};
+
+	const peekPrevious = async () => {
+		// look back, skipping any moved files
+		if (index !== undefined) {
+			let prevIndex = index;
+			while (prevIndex > 0) {
+				prevIndex--;
+				if (!files[prevIndex].movedTo) {
+					return files[prevIndex].file;
+				}
+			}
+		}
+
+		// didn't find any previous
+		return undefined;
+	};
+
+	const peekNext = async () => {
+		// look forward, skipping any moved files
+		if (index !== undefined) {
+			let nextIndex = index;
+			while (nextIndex < files.length - 1) {
+				nextIndex++;
+				if (!files[nextIndex].movedTo) {
+					return files[nextIndex].file;
+				}
+			}
+		}
+
+		// get the next file from disk
+		const photiso = getPhotisoApi();
+		const nextFile = await photiso.next();
+		if (nextFile) {
+			files.push({ file: nextFile });
+			return nextFile;
+		}
+
+		// didn't find any next
+		return undefined;
+	}
 
 	const clear = () => {
 		files = [];
@@ -105,6 +145,8 @@ export const createFileNavigator2 = () => {
 		current,
 		clear,
 		markMoved,
-		markRestored
+		markRestored,
+		peekPrevious,
+		peekNext
 	};
 };

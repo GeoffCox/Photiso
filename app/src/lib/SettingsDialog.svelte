@@ -1,10 +1,30 @@
 <script lang="ts">
-	import { Button, Checkbox, Dialog, Input, Label } from '@geoffcox/sterling-svelte';
+	import { Button, Checkbox, Dialog, Input, Label, MenuButton, MenuItem, Switch } from '@geoffcox/sterling-svelte';
 	import type { UserSettings } from '../types';
 	import { getDispatcher } from './dispatcher';
 	import { userSettings } from './stores';
 	import { DateTime } from 'luxon';
 	import { defaultUserSettings } from '../constants';
+
+	const dateFormats = [
+  { token: "yy", description: "year number, two-digits", example: "14" },
+  { token: "yyyy", description: "year number, four-digits", example: "2014" },
+  { token: "M", description: "month number", example: "8" },
+  { token: "MM", description: "month number, 2 digits", example: "08" },
+  { token: "MMM", description: "month name, abbreviated", example: "Aug" },
+  { token: "MMMM", description: "month name", example: "August" },
+  { token: "d", description: "day of month number", example: "6" },
+  { token: "dd", description: "day of month number, 2 digits", example: "06" },
+  { token: "h", description: "hour, 12 hour clock", example: "1" },
+  { token: "hh", description: "hour, 12-hour clock, 2 digits", example: "01" },
+  { token: "H", description: "hour, 24-hour clock", example: "9" },
+  { token: "HH", description: "hour, 24-hour clock, 2 digits", example: "13" },
+  { token: "a", description: "AM or PM", example: "AM" },
+  { token: "mm", description: "minute, 2 digits", example: "07" },
+  { token: "ss", description: "second, 2 digits", example: "04" },
+  { token: "SSS", description: "millisecond, 3 digits", example: "054" },
+  { token: "''", description: "Use single quotes to prevent using tokens", example: "'IMG_'" }
+];
 
 	export let open = false;
 	export let settings: UserSettings;
@@ -12,23 +32,32 @@
 	const dispatcher = getDispatcher();
 
 	let enableDefaultDirectoryName: UserSettings['enableDefaultDirectoryName'];
-	let defaultDirectoryName: UserSettings['defaultDirectoryName'];
+	let defaultDirectoryPattern: UserSettings['defaultDirectoryPattern'];
 	let enableDefaultFileName: UserSettings['enableDefaultFileName'];
-	let defaultFileName: UserSettings['defaultFileName'];
+	let defaultFileNamePattern: UserSettings['defaultFileNamePattern'];
+	let autoRenameConflicts: UserSettings['autoRenameConflicts'];
+	let copyOrMove: UserSettings['copyOrMove'];
+
+	let isMoveAction: boolean = defaultUserSettings.copyOrMove === 'move';
 
 	const loadSettings = () => {
 		enableDefaultDirectoryName = settings.enableDefaultDirectoryName;
-		defaultDirectoryName = settings.defaultDirectoryName;
+		defaultDirectoryPattern = settings.defaultDirectoryPattern;
 		enableDefaultFileName = settings.enableDefaultFileName;
-		defaultFileName = settings.defaultFileName;
+		defaultFileNamePattern = settings.defaultFileNamePattern;
+		autoRenameConflicts = settings.autoRenameConflicts;
+		copyOrMove = settings.copyOrMove;
+		isMoveAction = copyOrMove === 'move';
 	};
 
 	const saveSettings = async () => {
 		settings = {
-			enableDefaultDirectoryName: enableDefaultDirectoryName,
-			defaultDirectoryName,
+			enableDefaultDirectoryName,
+			defaultDirectoryPattern,
 			enableDefaultFileName,
-			defaultFileName
+			defaultFileNamePattern,
+			autoRenameConflicts,
+			copyOrMove
 		};
 		userSettings.set(settings);
 		await dispatcher.saveSettings();
@@ -36,12 +65,16 @@
 
 	const onDefault = () => {
 		enableDefaultDirectoryName = defaultUserSettings.enableDefaultDirectoryName;
-		defaultDirectoryName = defaultUserSettings.defaultDirectoryName;
+		defaultDirectoryPattern = defaultUserSettings.defaultDirectoryPattern;
 		enableDefaultFileName = defaultUserSettings.enableDefaultFileName;
-		defaultFileName = defaultUserSettings.defaultFileName;
+		defaultFileNamePattern = defaultUserSettings.defaultFileNamePattern;
+		autoRenameConflicts = defaultUserSettings.autoRenameConflicts;
+		copyOrMove = defaultUserSettings.copyOrMove;
+		isMoveAction = copyOrMove === 'move';
 	};
 
 	const onOK = () => {
+		copyOrMove = isMoveAction ? 'move' : 'copy';
 		saveSettings();
 		open = false;
 	};
@@ -58,41 +91,51 @@
 
 	const now = DateTime.now();
 
-	$: directoryExample = defaultDirectoryName ? now.toFormat(defaultDirectoryName) : '';
-	$: fileNameExample = defaultFileName ? now.toFormat(defaultFileName) : '';
+	$: directoryExample = defaultDirectoryPattern ? now.toFormat(defaultDirectoryPattern) : '';
+	$: fileNameExample = defaultFileNamePattern ? now.toFormat(defaultFileNamePattern) : '';
 </script>
 
 <Dialog bind:open on:close on:cancel>
 	<div slot="title">Options</div>
 	<div class="body" slot="body">
 		<div class="split">
-			<div class="edit-defaults">
-				<div class="default-directory-name">
-					<Checkbox bind:checked={enableDefaultDirectoryName}>
-						<Label for="defaultDirectoryName" text="Default Directory Name" />
-					</Checkbox>
-					<Input
-						id="defaultDirectoryName"
-						bind:value={defaultDirectoryName}
-						disabled={!enableDefaultDirectoryName}
-					/>
-					<div class="example-default">{enableDefaultDirectoryName ? directoryExample : ''}</div>
+			<div class="edit">
+				<div class="edit-section">
+					<Label for="enableDefaultDirectoryName" text="Default Directory Name">
+						<div class="checkbox-input">
+							<Checkbox id="enableDefaultDirectoryName" bind:checked={enableDefaultDirectoryName}
+							></Checkbox>
+							<Input
+								id="defaultDirectoryName"
+								bind:value={defaultDirectoryPattern}
+								disabled={!enableDefaultDirectoryName}
+							/>
+						</div>
+						<div class="example-default">{`(e.g. ${directoryExample})`}</div>
+					</Label>
 				</div>
-				<div class="default-file-name">
-					<Checkbox bind:checked={enableDefaultFileName}>
-						<Label for="defaultFileName" text="Default File Name" />
-					</Checkbox>
-					<Input
-						id="defaultFileName"
-						bind:value={defaultFileName}
-						disabled={!enableDefaultFileName}
-					/>
-					<div class="example-default">{enableDefaultFileName ? fileNameExample : ''}</div>
+				<div class="edit-section">
+					<Label for="enableDefaultFileName" text="Default File Name">
+						<div class="checkbox-input">
+							<Checkbox id="enableDefaultFileName" bind:checked={enableDefaultFileName}></Checkbox>
+							<Input
+								id="defaultFileName"
+								bind:value={defaultFileNamePattern}
+								disabled={!enableDefaultFileName}
+							/>
+						</div>
+						<div class="example-default">{`(e.g. ${fileNameExample})`}</div>
+					</Label>
+				</div>
+				<div class="edit-section">
+					<Label text="Conflict Resolution">
+						<Checkbox bind:checked={autoRenameConflicts}>Automatically add number suffix</Checkbox>
+					</Label>
 				</div>
 			</div>
 			<div class="separator" />
 			<div class="format-legend">
-				<p>You can use format tokens to include date taken information</p>
+				<p>You can include the when the photo was taken in the default directory name and file name by using tokens.</p>
 				<table class="format-table">
 					<thead>
 						<tr>
@@ -102,92 +145,13 @@
 						</tr>
 					</thead>
 					<tbody>
+						{#each dateFormats as dateFormat}
 						<tr>
-							<td>yy</td>
-							<td>year number, two-digits</td>
-							<td><code>14</code></td>
+							<td>{dateFormat.token}</td>
+							<td>{dateFormat.description}</td>
+							<td><code>{dateFormat.example}</code></td>
 						</tr>
-						<tr>
-							<td>yyyy</td>
-							<td>year number, four-digits</td>
-							<td><code>2014</code></td>
-						</tr>
-						<tr>
-							<td>M</td>
-							<td>month number</td>
-							<td><code>8</code></td>
-						</tr>
-						<tr>
-							<td>MM</td>
-							<td>month number, 2 digits</td>
-							<td><code>08</code></td>
-						</tr>
-						<tr>
-							<td>MMM</td>
-							<td>month name, abbreviated</td>
-							<td><code>Aug</code></td>
-						</tr>
-						<tr>
-							<td>MMMM</td>
-							<td>month name</td>
-							<td><code>August</code></td>
-						</tr>
-						<tr>
-							<td>d</td>
-							<td>day of month number</td>
-							<td><code>6</code></td>
-						</tr>
-						<tr>
-							<td>dd</td>
-							<td>day of month number, 2 digits</td>
-							<td><code>06</code></td>
-						</tr>
-
-						<tr>
-							<td>h</td>
-							<td>hour, 12 hour clock</td>
-							<td><code>1</code></td>
-						</tr>
-						<tr>
-							<td>hh</td>
-							<td>hour, 12-hour clock, 2 digits</td>
-							<td><code>01</code></td>
-						</tr>
-						<tr>
-							<td>H</td>
-							<td>hour, 24-hour clock</td>
-							<td><code>9</code></td>
-						</tr>
-						<tr>
-							<td>HH</td>
-							<td>hour, 24-hour clock, 2 digits</td>
-							<td><code>13</code></td>
-						</tr>
-						<tr>
-							<td>a</td>
-							<td>AM or PM</td>
-							<td><code>AM</code></td>
-						</tr>
-						<tr>
-							<td>mm</td>
-							<td>minute, 2 digits</td>
-							<td><code>07</code></td>
-						</tr>
-						<tr>
-							<td>ss</td>
-							<td>second, 2 digits</td>
-							<td><code>04</code></td>
-						</tr>
-						<tr>
-							<td>SSS</td>
-							<td>millisecond, 3 digits</td>
-							<td><code>054</code></td>
-						</tr>
-						<tr>
-							<td>''</td>
-							<td>Use single quotes to prevent using tokens</td>
-							<td><code>'IMG_'</code></td>
-						</tr>
+						{/each}
 					</tbody>
 				</table>
 			</div>
@@ -225,21 +189,33 @@
 		height: 100%;
 	}
 
-	.edit-defaults {
+	.edit {
 		display: grid;
 		align-items: flex-start;
 		row-gap: 1em;
 		min-width: 20em;
 	}
 
-	.default-directory-name {
-		display: grid;
-		align-items: flex-start;
+	.edit-section {
+		padding: 0 0.25em;
 	}
 
-	.default-file-name {
+	.edit-section > :global(label .content) {
+		padding: 0.25em 0;
+	}
+
+	.checkbox-input {
 		display: grid;
-		align-items: flex-start;
+		grid-template-columns: auto 1fr;
+	}
+
+	.example-default {
+		margin: 0.5em 0 0 2.25em;
+		font-size: 0.8em;
+	}
+
+	.format-legend {
+		max-width: 400px;
 	}
 
 	.format-table th {
@@ -251,8 +227,7 @@
 		padding: 0 0.5em;
 	}
 
-	.example-default {
-		margin: 0.5em 0 0 1em;
+	.format-table {
 		font-size: 0.8em;
 	}
 

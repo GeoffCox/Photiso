@@ -62,6 +62,11 @@
   .picture {
     overflow: hidden;
     padding: 0.25em;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    place-items: stretch;
+    place-content: stretch;
   }
 
   .name {

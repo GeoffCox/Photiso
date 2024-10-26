@@ -46,17 +46,30 @@
 	<div class="list">
 		{#each $actionHistory as item}
 			<div class="item">
-				<span>{item.action === 'copy' ? 'Copied' : 'Moved'} </span>
-				<span>{item.from}</span>
-				<span> to </span>
-				<span>{item.to}</span>
-				<Button variant="tool square" on:click={() => onUndo(item)}>Undo</Button>
+				<div class="action">{item.action === 'copy' ? 'Copied' : 'Moved'}</div>
+				<div class="from">{item.from}</div>
+				<div class="preposition">to</div>
+				<div class="to">{item.to}</div>
+				<div class="undo">
+					<Button variant="tool square" on:click={() => onUndo(item)}>Undo</Button>
+				</div>
 			</div>
 		{/each}
 	</div>
 </div>
 
 <style>
+	.history {
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		display: grid;
+		grid-template-rows: auto 1fr;
+		grid-template-columns: 1fr;
+	}
+
 	.list {
 		display: grid;
 		font-family: monospace;
@@ -64,12 +77,46 @@
 		grid-template-columns: 1fr;
 		grid-template-rows: auto;
 		padding: 1em 0;
+		row-gap: 0.5em;
 		align-items: center;
-		height: 75px;
 		overflow-y: auto;
 	}
 
-	.item {	
+	.item {
+		display: grid;
+		grid-template-columns: auto 1fr auto;
+		grid-template-rows: auto auto auto;
+		grid-template-areas: 'action from undo' 'action preposition undo' 'action to undo';
+		row-gap: 0.25em;
+		column-gap: 1em;
 		word-break: break-all;
+		padding: 0.5em;
+	}
+
+	.item:nth-child(odd) {
+		background-color: var(--stsv-button__background-color--active);
+	}
+
+	.action {
+		grid-area: action;
+		align-self: center;
+	}
+
+	.from {
+		grid-area: from;
+	}
+
+	.preposition {
+		grid-area: preposition;
+		padding-left: 3em;
+	}
+
+	.to {
+		grid-area: to;
+	}
+
+	.undo {
+		grid-area: undo;
+		align-self: center;
 	}
 </style>

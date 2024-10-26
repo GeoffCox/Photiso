@@ -10,8 +10,6 @@ export type PhotoInfo = {
 	model?: string;
 	mirrored?: boolean;
 	rotation?: Rotation;
-	resolutionX?: number;
-	resolutionY?: number;
 	width?: number;
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -25,7 +23,8 @@ export type PhotisoApi = {
 	getInfo: (file: string) => Promise<PhotoInfo>;
 	getThumbnailSrc: (file: string) => Promise<string>;
 	getSrc: (file: string) => Promise<string>;
-	getNoOverwriteSuffix: (destFile: string) => Promise<string | undefined>;
+	getSrcHash: (file: string) => Promise<string>;
+	getNoConflictFileNameSufix: (destFile: string) => Promise<string | undefined>;
 	copy: (source: string, dest: string) => Promise<void>;
 	move: (source: string, dest: string) => Promise<void>;
 };

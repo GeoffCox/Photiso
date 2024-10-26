@@ -37,14 +37,6 @@ export const getPhotoInfo = async (file: string): Promise<PhotoInfo> => {
 
   const orientation = data.Orientation && data.Orientation > 0 && data.Orientation < 9 ? data.Orientation : undefined;
 
-  let resolutionX = data.XResolution;
-  let resolutionY = data.YResolution;
-
-  if (data.ResolutionUnit === 3) {
-    resolutionX = resolutionX !== undefined ? resolutionX / 2.54 : resolutionX;
-    resolutionY = resolutionY !== undefined ? resolutionY / 2.54 : resolutionY;
-  }
-
   return {
     file,
     sizeInBytes: stat.size,
@@ -58,8 +50,6 @@ export const getPhotoInfo = async (file: string): Promise<PhotoInfo> => {
     model: data.Model,
     mirrored: orientation ? mirrored[orientation - 1] : undefined,
     rotation: orientation ? rotations[orientation - 1] : undefined,
-    resolutionX: resolutionX,
-    resolutionY: resolutionY,
     width: data.ExifImageWidth,
     exifData: data,
   };

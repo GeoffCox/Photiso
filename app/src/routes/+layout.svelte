@@ -41,9 +41,9 @@
 			'Segoe UI',
 			'Open Sans',
 			sans-serif;
-		font-size: 16	px;
+		font-size: 16px;
 
-		/* height: 100vh; */
+		/* SPA positioning */
 		position: absolute;
 		top: 0;
 		right: 0;
@@ -55,10 +55,14 @@
 	}
 
 	.app {
-		height: 100%;
 		display: grid;
+		grid-template-columns: 1fr;
+		grid-template-rows: 1fr;
+		height: 100vh;
+		margin: 0;
+		overflow: hidden;
+		padding: 0;
 		place-content: stretch;
 		place-items: stretch;
-		overflow: hidden;
 	}
 </style>
