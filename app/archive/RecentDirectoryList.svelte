@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { RecentDirectory } from '../../types';
-	import RecentDirectoryPill from './RecentDirectoryPill.svelte';
+	import type { RecentDirectory } from '../src/types';
+	import RecentDirectoryPill from '../src/lib/components/RecentDirectoryPill.svelte';
 
 	export let recentDirectories : RecentDirectory[] = [];
 

@@ -3,7 +3,7 @@ import type { ActionHistoryItem, AppState, Photo, UserSettings } from '../types'
 import { getContext, tick } from 'svelte';
 import { get } from 'svelte/store';
 import {
-	recentDirectories as relativeDirectoriesStore,
+	mostRecentToDirectory as mostRecentToDirectoryStore,
 	fromDirectory as fromDirectoryStore,
 	userSettings as userSettingsStore,
 	photo as photoStore,
@@ -20,6 +20,7 @@ import {
 import { getPathApi, getPhotisoApi } from './ipc.apis';
 import { DateTime } from 'luxon';
 import { createFileNavigator2 as createFileNavigator } from './fileNavigator2';
+import { isEqual} from 'lodash-es';
 
 const userSettingsStorageKey = 'photiso.UserSettings';
 const appStateStorageKey = 'photiso.AppState';
@@ -70,7 +71,8 @@ export const createDispatcher = () => {
 			if (appStateText) {
 				const appState = JSON.parse(appStateText) as AppState;
 				fromDirectoryStore.set(appState.fromDirectory);
-				relativeDirectoriesStore.set(appState.recentDirectories);
+				mostRecentToDirectoryStore.set(appState.mostRecentToDirectory);
+				favoriteDirectoriesStore.set(appState.favoriteDirectories || []);
 			}
 		}
 	};
@@ -80,7 +82,8 @@ export const createDispatcher = () => {
 		if (localStorage) {
 			const mruAppState: AppState = {
 				fromDirectory: get(fromDirectoryStore),
-				recentDirectories: get(relativeDirectoriesStore)
+				mostRecentToDirectory: get(mostRecentToDirectoryStore),
+				favoriteDirectories: get(favoriteDirectoriesStore)
 			};
 			localStorage.setItem(appStateStorageKey, JSON.stringify(mruAppState));
 		}
@@ -215,6 +218,7 @@ export const createDispatcher = () => {
 		const photiso = getPhotisoApi();
 		const fromDirectory = get(fromDirectoryStore);
 		if (photiso && fromDirectory) {
+			saveAppState(); //save from directory
 			await photiso.start(fromDirectory);
 			clearPhotoState();
 			await nextPhoto();
@@ -238,6 +242,7 @@ export const createDispatcher = () => {
 				newFavorites.toSorted((a, b) => a.localeCompare(b));
 				return newFavorites;
 			});
+			saveAppState();
 		}
 	};
 
@@ -249,6 +254,7 @@ export const createDispatcher = () => {
 				dirs.splice(index, 1);
 				return [...dirs];
 			});
+			saveAppState();
 		}
 	};
 
@@ -267,41 +273,6 @@ export const createDispatcher = () => {
 				return [...dirs];
 			});
 		}
-	};
-
-	// ----- Recent Directories ----- //
-
-	const addRecentDirectory = (directory: string) => {
-		relativeDirectoriesStore.update((dirs) => {
-			const index = dirs.findIndex((d) => d.dir === directory);
-			if (index === 0) {
-				dirs[0].lastUsedEpoch = Date.now();
-			} else if (index !== -1) {
-				const found = dirs.splice(index, 1)[0];
-				found.lastUsedEpoch = Date.now();
-				dirs.unshift(found);
-			} else {
-				dirs.unshift({
-					dir: directory,
-					firstUsedEpoch: Date.now(),
-					lastUsedEpoch: Date.now()
-				});
-			}
-
-			return dirs.toSorted((a, b) => {
-				if (a.favorite === b.favorite) {
-					return b.lastUsedEpoch - a.lastUsedEpoch;
-				} else if (a.favorite) {
-					return -1;
-				} else if (b.favorite) {
-					return 1;
-				}
-
-				return 0;
-			});
-		});
-
-		saveAppState();
 	};
 
 	// ----- Actions -----//
@@ -336,7 +307,7 @@ export const createDispatcher = () => {
 					] as ActionHistoryItem[];
 				});
 
-				addRecentDirectory(toDirectory);
+				mostRecentToDirectoryStore.set(toDirectory);
 
 				const movedFile = photo.file;
 				await nextPhoto();
@@ -382,7 +353,7 @@ export const createDispatcher = () => {
 					] as ActionHistoryItem[];
 				});
 
-				addRecentDirectory(toDirectory);
+				mostRecentToDirectoryStore.set(toDirectory);
 
 				await nextPhoto();
 				appStatusStore.set('ready');
@@ -393,25 +364,37 @@ export const createDispatcher = () => {
 	};
 
 	// ----- Photo actions -----//
-	const undoAction = async (createdEpoch: number) => {
+	
+
+	const undoAction = async (item: ActionHistoryItem) => {
 		const photisoApi = getPhotisoApi();
 
 		const actionHistory = get(actionHistoryStore);
 		if (actionHistory.length > 0) {
 			appStatusStore.set('busy');
 
-			const historyItem = actionHistory.find((i) => i.createdEpoch === createdEpoch);
+			const historyItem = actionHistory.find((i) => {
+				return isEqual(i, item);
+			});
 			if (historyItem) {
 				await photisoApi.move(historyItem.to, historyItem.from);
 				fileNav.markRestored(historyItem.from);
 				actionHistoryStore.update((h) => {
-					return h.filter((i) => i.createdEpoch !== createdEpoch);
+					return h.filter((i) => !isEqual(i, historyItem));
 				});
 				goToPhoto(historyItem.from);
 			}
 			appStatusStore.set('ready');
 		}
 	};
+
+	const undoLastAction = async () => {
+		const actionHistory = get(actionHistoryStore);
+		if (actionHistory.length > 0) {
+ 			await undoAction(actionHistory[0]);
+		}
+	}
+
 
 	return {
 		loadSettings,
@@ -427,6 +410,7 @@ export const createDispatcher = () => {
 		copyPhoto,
 		movePhoto,
 		undoAction,
+		undoLastAction,
 		addFavoriteDirectory,
 		removeFavoriteDirectory,
 		toggleFavoriteDirectory

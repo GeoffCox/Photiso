@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Input, Label, Switch } from '@geoffcox/sterling-svelte';
+	import { Button, Label, Switch } from '@geoffcox/sterling-svelte';
 	import {
 		toDirectory,
 		toFileName,
@@ -16,8 +16,7 @@
 	import { getDispatcher } from './dispatcher';
 
 	import { tick } from 'svelte';
-	import { getDialogApi, getPhotisoApi } from './ipc.apis';
-	import FileConflict from './components/FileConflict.svelte';
+	import { getPhotisoApi } from './ipc.apis';
 	import History from './History.svelte';
 	import { Split } from '@geoffcox/svelte-splitter';
 	import CopyToFolderIcon from './icons/CopyToFolderIcon.svelte';
@@ -77,13 +76,16 @@
 
 	$: updateNoConflictSuffix(), $toFile, $photo;
 
-
 	const onDone = async () => {
 		dispatcher.doneOrganizing();
 	};
 
-	const onUndo = (event: { detail: { item: ActionHistoryItem } }) => {
-		dispatcher.undoAction(event.detail.item.createdEpoch);
+	const onUndo = async (event: { detail: { item: ActionHistoryItem } }) => {
+		await dispatcher.undoAction(event.detail.item);
+	};
+
+	const onUndoLast = async () => {
+		await dispatcher.undoLastAction();
 	};
 
 	// ----- Apply Default Naming ----- //
@@ -101,7 +103,7 @@
 </script>
 
 <div class="to-view">
-	<Split horizontal initialPrimarySize="70%" minSecondarySize="100px">
+	<Split horizontal initialPrimarySize="70%" minSecondarySize="30px">
 		<svelte:fragment slot="primary">
 			<div class="top-area">
 				<div class="to-directory">
@@ -114,7 +116,7 @@
 					<Button variant="capsule" style="min-width: 150px;" on:click={onDone}
 						>Done Organizing</Button
 					>
-					<Button>Undo</Button>
+					<Button on:click={onUndoLast}>Undo</Button>
 					<div class="copy-move-action">
 						<Button disabled={!$canAct || moveEnabled} on:click={onCopy}
 							><CopyToFolderIcon width="32px" /> Copy</Button
@@ -147,6 +149,15 @@
 </div>
 
 <style>
+	.to-view {
+		display: grid;
+		grid-template-columns: 1fr;
+		grid-template-rows: 1fr;
+		justify-items: stretch;
+		align-items: stretch;
+		height: 100%;
+		box-sizing: border-box;
+	}
 
 	.top-area {
 		display: grid;
@@ -190,7 +201,9 @@
 	}
 
 	.history {
+		display: grid;
 		background-color: var(--stsv-common__background_color--secondary);
 		padding: 1em;
+		height: 100%;
 	}
 </style>

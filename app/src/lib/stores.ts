@@ -39,11 +39,13 @@ export const toFile: Readable<string | undefined> = derived(
 
 export const favoriteDirectories = writable<string[]>([]);
 
+export const mostRecentToDirectory = writable<string | undefined>();
+
 export const recentDirectories = writable<RecentDirectory[]>([]);
 
 export const defaultToDirectoryName: Readable<string | undefined> = derived(
-	[photo, recentDirectories, userSettings],
-	([$photo, $recentDirectories, $userSettings], set) => {
+	[photo, mostRecentToDirectory, userSettings],
+	([$photo, $mostRecentDirectory, $userSettings], set) => {
 		if ($userSettings?.enableDefaultDirectoryName) {
 			if ($photo?.dateTaken && $userSettings?.defaultDirectoryPattern !== undefined) {
 				console.log(
@@ -54,8 +56,8 @@ export const defaultToDirectoryName: Readable<string | undefined> = derived(
 			} else {
 				set('');
 			}
-		} else if ($recentDirectories.length > 0) {
-			set($recentDirectories.toSorted((a, b) => b.lastUsedEpoch - a.lastUsedEpoch)?.[0]?.dir || '');
+		} else if ($mostRecentDirectory) {
+			set($mostRecentDirectory);
 		} else {
 			set('');
 		}

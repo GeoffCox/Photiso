@@ -36,7 +36,8 @@ export type ActionHistoryItem = {
 
 export type AppState = {
 	fromDirectory?: string;
-	recentDirectories: RecentDirectory[];
+	mostRecentToDirectory?: string;
+	favoriteDirectories: string[];
 };
 
 export type UserSettings = {

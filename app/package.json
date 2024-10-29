@@ -40,6 +40,7 @@
 	"dependencies": {
 		"@geoffcox/sterling-svelte": "1.0.10",
 		"@geoffcox/svelte-splitter": "^1.0.1",
+		"lodash-es": "^4.17.21",
 		"luxon": "^3.4.4",
 		"pretty-bytes": "^6.1.1"
 	}

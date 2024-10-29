@@ -3,6 +3,7 @@
 	import { actionHistory } from './stores';
 	import { createEventDispatcher } from 'svelte';
 	import type { ActionHistoryItem } from '../types';
+	import HistoryItem from './HistoryItem.svelte';
 
 	const dispatch = createEventDispatcher();
 
@@ -46,13 +47,7 @@
 	<div class="list">
 		{#each $actionHistory as item}
 			<div class="item">
-				<div class="action">{item.action === 'copy' ? 'Copied' : 'Moved'}</div>
-				<div class="from">{item.from}</div>
-				<div class="preposition">to</div>
-				<div class="to">{item.to}</div>
-				<div class="undo">
-					<Button variant="tool square" on:click={() => onUndo(item)}>Undo</Button>
-				</div>
+				<HistoryItem {item} />
 			</div>
 		{/each}
 	</div>
@@ -72,30 +67,17 @@
 
 	.list {
 		display: grid;
-		font-family: monospace;
 		font-size: 0.8em;
 		grid-template-columns: 1fr;
 		grid-template-rows: auto;
-		padding: 1em 0;
-		row-gap: 0.5em;
-		align-items: center;
+		padding: 1em;
+		row-gap: 0.25em;
+		align-content: flex-start;
+		align-items: flex-start;
 		overflow-y: auto;
 	}
 
-	.item {
-		display: grid;
-		grid-template-columns: auto 1fr auto;
-		grid-template-rows: auto auto auto;
-		grid-template-areas: 'action from undo' 'action preposition undo' 'action to undo';
-		row-gap: 0.25em;
-		column-gap: 1em;
-		word-break: break-all;
-		padding: 0.5em;
-	}
-
-	.item:nth-child(odd) {
-		background-color: var(--stsv-button__background-color--active);
-	}
+	
 
 	.action {
 		grid-area: action;
